@@ -1,0 +1,1351 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>BANANA SPLIT · MELT CLUB</title>
+<meta name="description" content="내가 만든 덩스를 바나나 보드에 태워 노을 진 그래피티 골목을 달려요. 세 스쿱을 모으면 BANANA SPLIT!">
+<meta property="og:title" content="BANANA SPLIT · MELT CLUB 3D">
+<meta property="og:description" content="내 덩스로 바나나스플릿을 완성하는 3D 스낵게임">
+<meta name="theme-color" content="#1E1B1F">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22%3E%3Cpath d=%22M6 22q14 18 28 0q-14 8-28 0z%22 fill=%22%23F8CB3C%22 stroke=%22%231E1B1F%22 stroke-width=%223%22/%3E%3Ccircle cx=%2220%22 cy=%2214%22 r=%229%22 fill=%22%23EC4A86%22 stroke=%22%231E1B1F%22 stroke-width=%223%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Bungee&family=Noto+Sans+KR:wght@500;700;900&family=Space+Mono:wght@700&display=swap">
+<style>
+:root{
+  /* 영문 서체엔 한글이 없어 시스템 기본(가는) 서체로 떨어진다 → 한글 짝을 붙인다 (DESIGN.md: display-ko = Black Han Sans, body = Noto Sans KR) */
+  --f-display:"Bungee","Black Han Sans",sans-serif; --f-mono:"Space Mono","Noto Sans KR",monospace;
+  --asphalt:#EE9C59; --sun:#F7B878; --dusk:#C66E35; --ink:#1E1B1F; --cream:#F7E7CE;
+  --cherry:#EC4A86; --banana:#F8CB3C; --skate:#3FA9E0; --mint:#8ED7B9; --choco:#6A4230;
+  --hard:5px 6px 0 var(--ink); --hard-sm:3px 4px 0 var(--ink);
+  --ease:cubic-bezier(.16,1,.3,1); --snap:cubic-bezier(.34,1.56,.64,1);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0; height:100%; background:var(--ink); color:var(--ink); overflow:hidden; overscroll-behavior:none}
+body{font:500 16px/1.6 "Noto Sans KR",system-ui,sans-serif; word-break:keep-all; -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none}
+::selection{background:var(--banana); color:var(--ink)}
+button{font:inherit; color:inherit; cursor:pointer}
+:focus-visible{outline:3px solid var(--banana); outline-offset:3px}
+.mono{font-family:var(--f-mono); font-weight:700; letter-spacing:.14em; text-transform:uppercase}
+
+#app{position:fixed; inset:0; background:var(--asphalt)}
+#cv{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; outline:none}
+
+/* ── 공통 버튼 ── */
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:10px; min-height:52px; padding:12px 26px;
+  font:400 19px/1 var(--f-display); letter-spacing:.05em; color:var(--ink); background:var(--banana);
+  border:3px solid var(--ink); border-radius:999px; box-shadow:var(--hard); transform:rotate(-2deg);
+  transition:transform .18s var(--ease), box-shadow .18s var(--ease)}
+.btn:hover{transform:rotate(-2deg) translateY(-4px); box-shadow:6px 9px 0 var(--ink)}
+.btn:active{transform:rotate(-2deg) translateY(3px); box-shadow:1px 1px 0 var(--ink)}
+.btn--pink{background:var(--cherry)} .btn--blue{background:var(--skate)} .btn--mint{background:var(--mint)}
+.btn--ink{background:var(--ink); color:var(--cream); box-shadow:var(--hard-sm)}
+.btn--ghost{background:var(--cream)}
+.btn--sm{min-height:40px; padding:8px 16px; font-size:14px}
+.btn svg{width:18px; height:18px}
+
+/* ── 로딩 ── */
+#loading{position:absolute; inset:0; z-index:50; display:grid; place-items:center; background:var(--asphalt)}
+#loading .box{text-align:center}
+#loading .load-logo{display:block; width:min(440px,78vw); max-height:46vh; height:auto; object-fit:contain; margin:0 auto; transform:rotate(-6deg)}
+#loading .bar{width:min(320px,70vw); height:16px; margin:34px auto 10px; border:3px solid var(--ink); border-radius:999px; background:var(--cream); overflow:hidden}
+#loading .bar i{display:block; height:100%; width:0; background:var(--cherry); transition:width .3s var(--ease)}
+#loading .mono{font-size:12px}
+
+/* ── 화면(타이틀·일시정지·결과·도감) ── */
+.screen{position:absolute; inset:0; z-index:20; overflow:auto; -webkit-overflow-scrolling:touch}
+.screen.dim{background:rgba(30,27,31,.55)}
+
+/* 타이틀 */
+#title{display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:24px; padding:28px clamp(16px,4vw,48px) 28px; pointer-events:none}
+#title > *{pointer-events:auto}
+.logo{align-self:start; position:relative; max-width:560px}
+.logo .club{display:inline-block; background:var(--ink); color:var(--cream); font:400 14px/1 var(--f-display); letter-spacing:.12em; padding:8px 12px 6px; transform:rotate(-3deg)}
+.logo h1{margin:10px 0 0; font:400 clamp(54px,8.4vw,118px)/.84 var(--f-display); color:var(--banana); -webkit-text-stroke:3px var(--ink); paint-order:stroke fill; text-shadow:6px 7px 0 var(--ink); transform:rotate(-5deg); transform-origin:left bottom}
+.logo h1 span{display:block; white-space:nowrap}
+.logo h1 span + span{color:var(--cherry); margin-left:.3em}
+.logo h1.has-img{transform:none; text-shadow:none; -webkit-text-stroke:0; line-height:1}
+.logo h1 .logo-img{display:block; width:4.9em; max-width:100%; height:auto; transform:rotate(-6deg); transform-origin:center}
+/* 가로로 눕힌 휴대폰: 높이가 낮으니 로고를 높이 기준으로 줄여 캐릭터를 가리지 않게 */
+@media (max-height:520px) and (orientation:landscape){.logo h1 .logo-img{width:auto; height:min(50vh,240px)}}
+.logo .crown{display:inline-block; width:.62em; height:.47em; vertical-align:top; margin:-.18em 0 0 .04em; transform:rotate(16deg); overflow:visible}
+.logo p{margin:22px 0 0; max-width:30ch; font-weight:700; font-size:16px; background:var(--cream); border:3px solid var(--ink); border-radius:6px; padding:10px 14px; box-shadow:var(--hard-sm); transform:rotate(-1deg)}
+.title-act{grid-column:1; align-self:end; display:flex; flex-wrap:wrap; gap:16px; align-items:center}
+.title-act .btn--play{font-size:24px; min-height:64px; padding:14px 34px}
+.title-meta{grid-column:1; align-self:end; display:flex; gap:10px; flex-wrap:wrap}
+.chip{display:inline-flex; align-items:center; gap:6px; background:var(--cream); border:2px solid var(--ink); border-radius:999px; padding:4px 12px; font:700 12px/1.4 var(--f-mono); letter-spacing:.1em; text-transform:uppercase}
+.chip:nth-child(2n){transform:rotate(1.5deg)} .chip:nth-child(2n+1){transform:rotate(-1.5deg)}
+
+.lab{grid-column:2; grid-row:1 / span 3; align-self:center; background:var(--cream); border:3px solid var(--ink); border-radius:6px; padding:22px 18px 18px; box-shadow:7px 9px 0 var(--ink); transform:rotate(1deg); position:relative;
+  background-image:repeating-linear-gradient(0deg, rgba(30,27,31,.05) 0 1px, transparent 1px 24px), repeating-linear-gradient(90deg, rgba(30,27,31,.05) 0 1px, transparent 1px 24px)}
+.lab .tape{position:absolute; top:-13px; width:88px; height:24px; background:rgba(247,231,206,.85); border:1px solid rgba(30,27,31,.22)}
+.lab .tape.a{left:18px; transform:rotate(-6deg)} .lab .tape.b{right:18px; transform:rotate(5deg)}
+.lab h2{margin:0; font:400 20px/1 var(--f-display)}
+.lab .sub{margin:6px 0 0; font-size:13px; font-weight:700}
+.lab .row{margin-top:14px}
+.lab .rh{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:7px}
+.lab .rh b{font:400 12px/1 var(--f-display); letter-spacing:.12em}
+.lab .rh em{font:700 12.5px/1 "Noto Sans KR",sans-serif; font-style:normal; letter-spacing:0; color:var(--choco); font-variant-numeric:tabular-nums} /* 한글 값 자리: 고정폭 공백·가운뎃점이 글자 사이를 벌리지 않게 본문 서체로 */
+.tiers{display:grid; grid-template-columns:repeat(3,1fr); gap:6px}
+.tiers button,.pick button{border:2.5px solid var(--ink); background:rgba(255,255,255,.5); border-radius:8px; padding:6px 0; display:flex; flex-direction:column; align-items:center; gap:2px; font-weight:700; font-size:12px; line-height:1.1}
+.tiers button i{display:block; width:22px; height:12px; border-radius:999px; border:2px solid var(--ink)}
+.tiers button.on,.pick button.on{background:var(--ink); color:var(--banana)}
+.flavors{display:grid; grid-template-columns:repeat(4,1fr); gap:6px 6px}
+.flavors button{border:0; background:none; padding:0; display:flex; flex-direction:column; align-items:center; gap:2px; font-weight:700; font-size:12px}
+.flavors button i{display:block; width:40px; height:40px; border-radius:50%; border:2.5px solid var(--ink); box-shadow:inset -3px -4px 0 rgba(30,27,31,.18), inset 3px 3px 0 rgba(255,255,255,.35); transition:transform .16s var(--ease)}
+.flavors button:hover i{transform:translateY(-3px) rotate(-6deg)}
+.flavors button.on i{outline:3px solid var(--ink); outline-offset:2px}
+.flavors button.on span{background:var(--ink); color:var(--banana); border-radius:3px; padding:0 4px}
+.pick{display:grid; grid-template-columns:repeat(6,1fr); gap:5px}
+.pick button{font-size:11px; padding:5px 0}
+.pick .sw{width:16px; height:16px; border-radius:50%; border:2px solid var(--ink)}
+.pick button.on .sw{border-color:var(--cream)}
+.pick svg{width:22px; height:14px}
+#bLab,.lab-done{display:none}
+
+/* 일시정지 */
+.card{margin:auto; background:var(--cream); border:3px solid var(--ink); border-radius:10px; box-shadow:8px 10px 0 var(--ink); padding:26px 24px; max-width:440px; width:calc(100% - 32px); text-align:center; position:relative}
+.center{display:grid; place-items:center; padding:24px 0}
+.card h2{margin:0 0 6px; font:400 34px/1 var(--f-display)}
+.card .btns{display:flex; flex-direction:column; gap:14px; margin-top:20px; align-items:stretch}
+.keys{display:grid; grid-template-columns:auto 1fr; gap:6px 12px; text-align:left; margin:14px 0 0; font-size:14px; font-weight:700}
+.keys kbd{font:700 12px/1.6 var(--f-mono); background:var(--ink); color:var(--cream); border-radius:4px; padding:1px 7px; letter-spacing:.06em; text-align:center}
+.keys.ko kbd{font:700 12.5px/1.6 "Noto Sans KR",sans-serif; letter-spacing:0; padding:1px 9px}
+
+/* 결과 — 영수증 */
+#result .receipt{margin:auto; width:min(560px, calc(100% - 28px)); background:var(--cream); border:3px solid var(--ink); border-bottom:0; border-radius:8px 8px 0 0; padding:24px 22px 34px; position:relative; box-shadow:8px 0 0 var(--ink); transform:rotate(-.6deg);
+  -webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - 14px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom/24px 14px repeat-x;
+          mask:linear-gradient(#000 0 0) top/100% calc(100% - 14px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom/24px 14px repeat-x}
+.receipt .tag{display:inline-block; background:var(--ink); color:var(--banana); font:400 13px/1 var(--f-display); letter-spacing:.12em; padding:7px 10px 5px; transform:rotate(-2deg)}
+.receipt .score{display:flex; align-items:flex-end; gap:12px; margin:12px 0 0}
+.receipt .score b{font:400 clamp(52px,12vw,80px)/.9 var(--f-display); color:var(--cherry); -webkit-text-stroke:3px var(--ink); paint-order:stroke fill; text-shadow:5px 5px 0 var(--ink)}
+.receipt .score span{padding-bottom:8px; font-size:12px}
+.receipt .best{display:inline-block; margin-left:4px; background:var(--banana); border:2px solid var(--ink); border-radius:999px; padding:2px 10px; font:400 12px/1.4 var(--f-display); transform:rotate(4deg)}
+.stats{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:16px 0 0; border-top:2px dashed var(--ink); border-bottom:2px dashed var(--ink); padding:12px 0}
+.stats div{text-align:center}
+.stats b{display:block; font:700 20px/1.1 var(--f-mono)}
+.stats span{font-size:12px; font-weight:700}
+.made{display:flex; gap:14px; align-items:center; margin-top:16px}
+.made img{width:84px; height:84px; object-fit:contain; background:var(--asphalt); border:2.5px solid var(--ink); border-radius:10px; flex:none}
+.made b{display:block; font:400 21px/1.15 "Black Han Sans",sans-serif}
+.made p{margin:2px 0 0; font-size:13px; font-weight:700; line-height:1.45}
+.rew{margin-top:16px}
+.rew .rh{font:400 13px/1 var(--f-display); letter-spacing:.1em}
+.rew .row{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; min-height:20px}
+.rew .none{font-size:13px; font-weight:700}
+.stk{width:92px; perspective:600px}
+.stk .in{position:relative; width:92px; height:112px; transform-style:preserve-3d; transition:transform .55s var(--snap)}
+.stk.flip .in{transform:rotateY(180deg)}
+.stk .f,.stk .b{position:absolute; inset:0; backface-visibility:hidden; border:2.5px solid var(--ink); border-radius:10px; display:grid; place-items:center; background:var(--ink)}
+.stk .b{color:var(--banana); font:400 30px/1 var(--f-display)}
+.stk .f{transform:rotateY(180deg); background:#fff; align-content:start; padding:6px 4px; gap:2px}
+.stk .f img{width:66px; height:66px}
+.stk .f b{font:700 11px/1.1 var(--f-mono); text-align:center; letter-spacing:.02em; text-transform:uppercase}
+.stk .f u{position:absolute; top:-10px; right:-8px; text-decoration:none; background:var(--cherry); border:2px solid var(--ink); border-radius:999px; padding:1px 7px; font:400 11px/1.4 var(--f-display); transform:rotate(8deg)}
+.stk .f u.dup{background:var(--mint)}
+.stk.r1 .f{background:#DFF2FB} .stk.r2 .f{background:linear-gradient(135deg,#FFF4C2,#F8CB3C 45%,#FFE58A 60%,#EC4A86)}
+#result .acts{width:min(560px, calc(100% - 28px)); margin:18px auto 30px; display:flex; flex-wrap:wrap; gap:14px; justify-content:center}
+.bridge{margin-top:16px; background:var(--ink); color:var(--cream); border-radius:8px; padding:12px 14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+.bridge p{flex:1 1 200px; margin:0; font-weight:700; font-size:14px; line-height:1.45}
+.bridge p b{color:var(--banana)}
+
+/* 도감 */
+#book .card{max-width:720px; text-align:left}
+.book-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:16px}
+.slot{border:2.5px dashed var(--ink); border-radius:10px; aspect-ratio:4/5; display:grid; place-items:center; align-content:center; gap:4px; padding:6px; text-align:center; background:rgba(30,27,31,.05)}
+.slot.got{border-style:solid; background:#fff; box-shadow:var(--hard-sm)}
+.slot.holo{background:linear-gradient(135deg,#FFF4C2,#8ED7B9 40%,#3FA9E0 60%,#EC4A86)}
+.slot img{width:72%; height:auto}
+.slot b{font:700 11px/1.15 var(--f-mono); text-transform:uppercase}
+.slot i{font-style:normal; font-size:11px; font-weight:700}
+.slot .q{font:400 34px/1 var(--f-display); opacity:.35}
+.medals{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px}
+.medals span{border:2px solid var(--ink); border-radius:999px; padding:3px 10px; font:400 12px/1.4 var(--f-display); opacity:.35}
+.medals span.on{opacity:1; background:var(--banana)}
+
+/* ── HUD ── */
+#hud{position:absolute; inset:0; z-index:10; pointer-events:none; padding:max(14px,env(safe-area-inset-top)) clamp(12px,2.4vw,28px) 14px}
+.h-top{display:flex; justify-content:space-between; align-items:flex-start; gap:12px}
+.h-score{background:var(--ink); color:var(--cream); border-radius:6px; padding:8px 14px 10px; transform:rotate(-1.5deg); box-shadow:4px 5px 0 rgba(30,27,31,.35); min-width:170px}
+.h-score span{font:700 11px/1 var(--f-mono); letter-spacing:.16em; color:var(--banana)}
+.h-score b{display:block; font:400 clamp(26px,3.4vw,40px)/1 var(--f-display); margin-top:4px; font-variant-numeric:tabular-nums}
+.h-score i{position:absolute; right:-12px; top:-12px; font:400 15px/1 var(--f-display); font-style:normal; background:var(--cherry); color:var(--ink); border:2.5px solid var(--ink); border-radius:999px; padding:6px 8px 4px; transform:rotate(10deg)}
+.h-score{position:relative}
+.h-mid{text-align:center; flex:1}
+.h-mid b{display:block; font:400 clamp(24px,3vw,36px)/1 var(--f-display); color:var(--cream); -webkit-text-stroke:2.5px var(--ink); paint-order:stroke fill; text-shadow:3px 3px 0 var(--ink)}
+.h-mid span{display:inline-block; margin-top:6px; font:700 11px/1 var(--f-mono); letter-spacing:.14em; background:var(--ink); color:var(--cream); padding:4px 8px; border-radius:3px}
+.h-right{display:flex; flex-direction:column; align-items:flex-end; gap:10px}
+.h-btns{display:flex; gap:8px; pointer-events:auto}
+.ic{width:42px; height:42px; display:grid; place-items:center; background:var(--cream); border:3px solid var(--ink); border-radius:8px; box-shadow:var(--hard-sm); padding:0}
+.ic svg{width:18px; height:18px}
+.ic.off{opacity:.55}
+.order{background:var(--cream); border:3px solid var(--ink); border-radius:10px; padding:8px 10px 9px; box-shadow:var(--hard-sm); transform:rotate(1.5deg); min-width:196px}
+.order .oh{display:flex; justify-content:space-between; align-items:center; gap:8px}
+.order .oh b{font:400 12px/1 var(--f-display); letter-spacing:.08em}
+.order .oh em{font:700 11px/1 var(--f-mono); font-style:normal; letter-spacing:.08em}
+.boat{display:flex; align-items:flex-end; gap:6px; margin-top:7px; padding:0 4px 0; position:relative}
+.boat::after{content:""; position:absolute; left:-2px; right:-2px; bottom:-6px; height:14px; border-radius:0 0 40px 40px; background:var(--banana); border:2.5px solid var(--ink); z-index:0}
+.scoop{position:relative; z-index:1; width:44px; height:40px; border-radius:50% 50% 42% 42%; border:2.5px dashed var(--ink); background:transparent; display:grid; place-items:center}
+.scoop.on{border-style:solid; animation:pop .45s var(--snap)}
+.scoop.next{box-shadow:0 0 0 3px var(--cream), 0 0 0 6px var(--ink)}
+.scoop i{position:absolute; inset:5px; border-radius:50%; opacity:.45}
+.scoop.on i{display:none}
+@keyframes pop{0%{transform:scale(.4)}100%{transform:scale(1)}}
+.need{margin-top:12px; font:700 12px/1.2 "Noto Sans KR",sans-serif; display:flex; align-items:center; gap:6px}
+.need i{width:14px; height:14px; border-radius:50%; border:2px solid var(--ink); display:inline-block}
+.h-bottom{position:absolute; left:clamp(12px,2.4vw,28px); bottom:max(16px,env(safe-area-inset-bottom)); display:flex; gap:12px; align-items:flex-end}
+.lives{display:flex; flex-direction:column-reverse; align-items:center; gap:3px; background:var(--ink); padding:8px 8px 6px; border-radius:8px}
+.lives i{display:block; height:14px; border-radius:999px; border:2px solid var(--cream); transition:transform .3s var(--snap), opacity .3s}
+.lives i:nth-child(1){width:46px} .lives i:nth-child(2){width:38px} .lives i:nth-child(3){width:30px; height:16px; border-radius:999px 999px 6px 6px}
+.lives i.gone{opacity:.25; transform:scaleY(.4); background:transparent!important}
+.lives span{font:700 11px/1 var(--f-mono); color:var(--cream); letter-spacing:.12em; margin-top:4px}
+.combo{background:var(--cream); border:3px solid var(--ink); border-radius:8px; padding:6px 10px 8px; min-width:150px; transform:rotate(-1deg)}
+.combo b{font:400 14px/1 var(--f-display)}
+.combo .bar{height:8px; border:2px solid var(--ink); border-radius:99px; margin-top:6px; overflow:hidden; background:#fff}
+.combo .bar i{display:block; height:100%; width:0; background:var(--cherry)}
+.split-meter{position:absolute; left:50%; bottom:max(18px,env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(340px,60vw); height:22px; border:3px solid var(--ink); border-radius:999px; background:var(--cream); overflow:hidden; display:none}
+.split-meter i{display:block; height:100%; width:100%; background:repeating-linear-gradient(-45deg,var(--banana) 0 12px,var(--cherry) 12px 24px)}
+.split-meter span{position:absolute; inset:0; display:grid; place-items:center; font:400 12px/1 var(--f-display); letter-spacing:.1em}
+body.splitting .split-meter{display:block}
+
+/* ── 이펙트 레이어 ── */
+#fx{position:absolute; inset:0; z-index:9; pointer-events:none; overflow:hidden}
+.speed{position:absolute; inset:-10%; opacity:0; transition:opacity .3s;
+  background:repeating-conic-gradient(from 0deg at 50% 52%, rgba(247,231,206,.0) 0deg 4deg, rgba(247,231,206,.55) 4.4deg 5deg, rgba(247,231,206,0) 5.4deg 11deg);
+  -webkit-mask:radial-gradient(circle at 50% 52%, transparent 0 34%, #000 62%); mask:radial-gradient(circle at 50% 52%, transparent 0 34%, #000 62%)}
+.halftone{position:absolute; inset:0; opacity:0; transition:opacity .4s; background:radial-gradient(circle, rgba(236,74,134,.55) 1.6px, transparent 2.2px) 0 0/12px 12px;
+  -webkit-mask:radial-gradient(circle at 50% 50%, transparent 0 45%, #000 85%); mask:radial-gradient(circle at 50% 50%, transparent 0 45%, #000 85%)}
+body.splitting .halftone{opacity:1}
+.flash{position:absolute; inset:0; background:var(--banana); opacity:0}
+.flash.go{animation:flash .5s ease-out}
+@keyframes flash{0%{opacity:.75}100%{opacity:0}}
+/* 마지막 목숨: 번지는 핑크 빛 대신 화면 가장자리에 스티커 테두리처럼 두꺼워졌다 얇아지는 체리·잉크 프레임 */
+.vignette{position:absolute; inset:0; opacity:0; box-shadow:inset 0 0 0 0 var(--cherry), inset 0 0 0 0 var(--ink); transition:opacity .3s}
+body.lastlife .vignette{opacity:1; animation:vig 1s ease-in-out infinite}
+@keyframes vig{0%,100%{box-shadow:inset 0 0 0 8px var(--cherry), inset 0 0 0 12px var(--ink)}50%{box-shadow:inset 0 0 0 16px var(--cherry), inset 0 0 0 21px var(--ink)}}
+.splat{position:absolute; inset:0; opacity:0}
+.splat svg{position:absolute; width:60vmin; height:60vmin}
+.splat.go{animation:splat .9s ease-out}
+@keyframes splat{0%{opacity:1; transform:scale(.6)}12%{opacity:1; transform:scale(1.05)}100%{opacity:0; transform:scale(1.08)}}
+.slam{position:absolute; left:50%; top:30%; transform:translate(-50%,-50%) rotate(-6deg) scale(.2); opacity:0; text-align:center; white-space:nowrap}
+.slam b{display:block; font:400 clamp(48px,10vw,130px)/.86 var(--f-display); color:var(--banana); -webkit-text-stroke:4px var(--ink); paint-order:stroke fill; text-shadow:7px 8px 0 var(--ink), 13px 15px 0 var(--cherry)}
+.slam b + b{color:var(--cherry); text-shadow:7px 8px 0 var(--ink), 13px 15px 0 var(--banana)}
+.slam.go{animation:slam 1.6s var(--ease) forwards}
+@keyframes slam{0%{opacity:0; transform:translate(-50%,-50%) rotate(-6deg) scale(2.4)}12%{opacity:1; transform:translate(-50%,-50%) rotate(-6deg) scale(.92)}20%{transform:translate(-50%,-50%) rotate(-6deg) scale(1)}80%{opacity:1}100%{opacity:0; transform:translate(-50%,-60%) rotate(-6deg) scale(1.04)}}
+.zone{position:absolute; left:0; top:24%; background:var(--ink); color:var(--cream); padding:14px 40px 12px 30px; transform:translateX(-110%) rotate(-2deg); font:400 clamp(20px,3vw,32px)/1 var(--f-display); letter-spacing:.06em; clip-path:polygon(0 0,100% 6%,97% 100%,0 94%)}
+.zone small{display:block; font:700 12px/1 var(--f-mono); color:var(--banana); letter-spacing:.16em; margin-bottom:6px}
+.zone.go{animation:zone 2.4s var(--ease) forwards}
+@keyframes zone{0%{transform:translateX(-110%) rotate(-2deg)}15%,80%{transform:translateX(0) rotate(-2deg)}100%{transform:translateX(-110%) rotate(-2deg)}}
+.count{position:absolute; left:50%; top:40%; transform:translate(-50%,-50%); font:400 clamp(80px,18vw,200px)/1 var(--f-display); color:var(--cream); -webkit-text-stroke:5px var(--ink); paint-order:stroke fill; text-shadow:8px 9px 0 var(--ink)}
+.count.go{animation:cnt .7s var(--snap)}
+@keyframes cnt{0%{transform:translate(-50%,-50%) scale(2.2) rotate(-12deg); opacity:0}40%{opacity:1; transform:translate(-50%,-50%) scale(1) rotate(-4deg)}100%{transform:translate(-50%,-50%) scale(.9) rotate(-4deg); opacity:.9}}
+.pop{position:absolute; transform:translate(-50%,-50%); white-space:nowrap; font:400 18px/1 var(--f-display); color:var(--ink); background:var(--banana); border:2.5px solid var(--ink); border-radius:6px; padding:6px 9px 4px; box-shadow:3px 3px 0 var(--ink); animation:popup 1s var(--ease) forwards}
+.pop.pink{background:var(--cherry)} .pop.blue{background:var(--skate)} .pop.mint{background:var(--mint)} .pop.cream{background:var(--cream)} .pop.ink{background:var(--ink); color:var(--cream)}
+.pop.big{font-size:26px}
+@keyframes popup{0%{opacity:0; transform:translate(-50%,-30%) scale(.5) rotate(-8deg)}18%{opacity:1; transform:translate(-50%,-80%) scale(1.08) rotate(-4deg)}75%{opacity:1}100%{opacity:0; transform:translate(-50%,-190%) scale(.96) rotate(-4deg)}}
+#hint{position:absolute; left:50%; bottom:90px; transform:translateX(-50%); z-index:11; pointer-events:none; background:var(--ink); color:var(--cream); border-radius:999px; padding:8px 16px; font-weight:700; font-size:14px; opacity:0; transition:opacity .4s}
+#hint.on{opacity:1}
+
+/* ── 반응형 ── */
+@media (max-width:860px){
+  #title{grid-template-columns:1fr; grid-template-rows:auto 1fr auto auto auto; padding:max(16px,env(safe-area-inset-top)) 16px 20px; gap:14px}
+  .logo h1{font-size:clamp(46px,13vw,80px)}
+  /* 모바일: 타이틀을 화면 위 가운데로 */
+  .logo{justify-self:center; text-align:center}
+  .logo h1 .logo-img{margin:0 auto}
+  .logo p{display:none}
+  #title{grid-template-rows:auto 1fr auto auto}
+  #bLab{display:inline-flex}
+  .lab{display:none; position:fixed; left:10px; right:10px; bottom:max(10px,env(safe-area-inset-bottom)); max-height:58vh; overflow:auto; transform:none; padding:16px 14px 14px; z-index:5}
+  body.lab-open .lab{display:block}
+  body.lab-open .title-act, body.lab-open .title-meta{visibility:hidden}
+  .lab-done{display:flex; width:100%; margin-top:14px; transform:none}
+  .lab .row{margin-top:10px}
+  .flavors{grid-template-columns:repeat(8,1fr); gap:4px}
+  .flavors button i{width:32px; height:32px}
+  .flavors button span{display:none}
+  .flavors button.on span{display:none}
+  .title-act{justify-content:center}
+  .title-meta{justify-content:center}
+  .order{min-width:0; padding:6px 8px 8px}
+  .scoop{width:34px; height:31px}
+  .h-score{min-width:120px; padding:6px 10px 8px}
+  .h-mid span{display:none}
+  .combo{min-width:110px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .book-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:420px){
+  .h-mid{display:none}
+  .order .oh em{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .speed,.halftone{display:none}
+  .slam.go,.zone.go,.count.go,.pop,.scoop.on{animation-duration:.01s}
+  body.lastlife .vignette{animation:none; box-shadow:inset 0 0 0 12px var(--cherry), inset 0 0 0 16px var(--ink)}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="cv" tabindex="0" aria-label="바나나 스플릿 게임 화면"></canvas>
+
+  <div id="fx" aria-hidden="true">
+    <div class="speed" id="speed"></div>
+    <div class="halftone"></div>
+    <div class="vignette"></div>
+    <div class="flash" id="flash"></div>
+    <div class="splat" id="splat">
+      <svg viewBox="0 0 200 200" style="left:4%;top:8%"><path fill="#1E1B1F" d="M100 18c14 22 40 2 46 26 6 22 34 16 30 40-4 22 20 34 2 52-16 16-2 42-28 44-24 2-30 26-52 14-20-12-44 4-52-20-8-22-34-26-24-48 10-20-10-40 10-52 20-12 12-40 36-40 14 0 22 12 32 4z"/><circle cx="170" cy="40" r="10" fill="#1E1B1F"/><circle cx="24" cy="172" r="8" fill="#1E1B1F"/></svg>
+      <svg viewBox="0 0 200 200" style="right:2%;bottom:4%"><path fill="#EC4A86" d="M96 30c18 10 34-8 46 10 10 16 32 14 30 36-2 20 16 32 0 48-14 14 0 34-22 40-20 6-26 26-46 16-18-8-38 4-46-16-8-18-30-22-22-42 8-18-8-34 8-46 16-12 10-36 30-40 10-2 14 0 22-6z"/><circle cx="34" cy="38" r="9" fill="#EC4A86"/></svg>
+    </div>
+    <div class="slam" id="slam"><b>BANANA</b><b>SPLIT!</b></div>
+    <div class="zone" id="zone"><small>ZONE 1</small><span>SUNSET HILL</span></div>
+    <div class="count" id="count" hidden>3</div>
+    <div id="pops"></div>
+  </div>
+
+  <div id="hud" hidden>
+    <div class="h-top">
+      <div class="h-score"><span>SCORE</span><b id="hScore">0</b><i id="hMult" hidden>×1</i></div>
+      <div class="h-mid"><b id="hDist">0M</b><span id="hZone">SUNSET HILL</span></div>
+      <div class="h-right">
+        <div class="h-btns">
+          <button class="ic" id="bMute" aria-label="소리 끄기/켜기"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7h4l5-4v14l-5-4H3z" fill="#1E1B1F"/><path d="M14 6c2 2 2 6 0 8" fill="none" stroke="#1E1B1F" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+          <button class="ic" id="bPause" aria-label="일시정지"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="3" width="4" height="14" rx="1" fill="#1E1B1F"/><rect x="12" y="3" width="4" height="14" rx="1" fill="#1E1B1F"/></svg></button>
+        </div>
+        <div class="order" id="order">
+          <div class="oh"><b id="oTitle">YOUR SPLIT</b><em id="oCount">ORDER 01</em></div>
+          <div class="boat" id="boat"><div class="scoop"><i></i></div><div class="scoop"><i></i></div><div class="scoop"><i></i></div></div>
+          <div class="need" id="need"><i></i><span>다음 스쿱</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="h-bottom">
+      <div class="lives" id="lives"><i></i><i></i><i></i><span>3 LIVES</span></div>
+      <div class="combo"><b id="hCombo">COMBO 0</b><div class="bar"><i id="hComboBar"></i></div></div>
+    </div>
+    <div class="split-meter"><i id="splitBar"></i><span>BANANA SPLIT MODE</span></div>
+  </div>
+  <div id="hint">← → 줄 바꾸기 · ↑ 점프 · ↓ 숙이기</div>
+
+  <!-- 타이틀 -->
+  <section class="screen" id="title" hidden aria-label="타이틀">
+    <div class="logo">
+      <h1 aria-label="BANANA SPLIT" data-impeccable-ignore="low-contrast"><span aria-hidden="true">BANANA<svg class="crown" viewBox="0 0 40 30" aria-hidden="true"><path d="M3 26 L5 7 L13 16 L20 3 L27 16 L35 7 L37 26 Z" fill="#F8CB3C" stroke="#1E1B1F" stroke-width="3" stroke-linejoin="round"/></svg></span><span aria-hidden="true">SPLIT</span></h1>
+      <p>노을 진 그래피티 골목을 바나나 보드로 내려가. 네 덩스의 세 단 맛 그대로 스쿱을 모으면 BANANA SPLIT!</p>
+    </div>
+    <div class="title-act">
+      <button class="btn btn--pink btn--play" id="bPlay">PLAY <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3l12 7-12 7z" fill="#1E1B1F"/></svg></button>
+      <button class="btn btn--mint btn--sm" id="bLab">덩스 꾸미기</button>
+      <button class="btn btn--ghost btn--sm" id="bHow">HOW TO</button>
+      <button class="btn btn--ghost btn--sm" id="bBook">STICKERS <span id="tStk">0/12</span></button>
+    </div>
+    <div class="title-meta"><span class="chip">MELT CLUB 3D</span><span class="chip">BEST <b id="tBest">0</b></span><span class="chip">SPLITS <b id="tSplits">0</b></span><span class="chip">3 TIERS · 3 LIVES</span></div>
+    <aside class="lab" aria-label="덩스 꾸미기">
+      <span class="tape a" aria-hidden="true"></span><span class="tape b" aria-hidden="true"></span>
+      <h2>DUNGS STACK LAB</h2>
+      <p class="sub">세 단의 맛이 첫 주문이 돼.</p>
+      <div class="row"><div class="rh"><b>LAYER</b><em id="labLayer">02 · 가운데</em></div><div class="tiers" id="tiers"></div></div>
+      <div class="row"><div class="rh"><b>FLAVOR</b><em id="labFlavor"></em></div><div class="flavors" id="flavors"></div></div>
+      <div class="row"><div class="rh"><b>NOSE</b><em id="labNose">하트 코</em></div><div class="pick" id="noses"></div></div>
+      <div class="row"><div class="rh"><b>BOARD</b><em id="labBoard">바나나 보드</em></div><div class="pick" id="boards"></div></div>
+      <button class="btn btn--sm lab-done" id="bLabDone">DONE</button>
+    </aside>
+  </section>
+
+  <!-- 방법 -->
+  <section class="screen dim center" id="how" hidden aria-label="플레이 방법">
+    <div class="card">
+      <h2>HOW TO</h2>
+      <p style="margin:0;font-weight:700">주문서의 맛 순서대로 스쿱을 먹어. 세 개를 다 채우면 <b>BANANA SPLIT</b> — 무적, 점수 두 배, 무지개 스프레이.</p>
+      <div class="keys">
+        <kbd>← →</kbd><span>줄 바꾸기 (A D · 좌우 스와이프)</span>
+        <kbd>↑ SPACE</kbd><span>점프 · 공중에서 한 번 더 = 킥플립 (W · 위 스와이프 · 탭)</span>
+        <kbd>↓</kbd><span>숙이기 · 공중에선 급강하 (S · 아래 스와이프)</span>
+        <kbd>P ESC</kbd><span>일시정지</span>
+      </div>
+      <div class="keys ko" style="margin-top:12px">
+        <kbd>콘 · 바리케이드</kbd><span>점프로 넘거나 피해</span>
+        <kbd>현수막</kbd><span>숙여서 지나가</span>
+        <kbd>녹은 웅덩이</kbd><span>미끄러져서 콤보가 끊겨</span>
+        <kbd>체리</kbd><span>녹은 단 하나 회복</span>
+      </div>
+      <div class="btns"><button class="btn" data-close>GOT IT</button></div>
+    </div>
+  </section>
+
+  <!-- 일시정지 -->
+  <section class="screen dim center" id="pause" hidden aria-label="일시정지">
+    <div class="card">
+      <h2>PAUSED</h2>
+      <p style="margin:0;font-weight:700">녹는 건 잠깐 멈췄어.</p>
+      <div class="btns">
+        <button class="btn" id="bResume">RESUME</button>
+        <button class="btn btn--ghost" id="bQuit">타이틀로</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 결과 -->
+  <section class="screen dim" id="result" hidden aria-label="결과">
+    <div style="padding-top:clamp(16px,5vh,48px)">
+      <div class="receipt">
+        <span class="tag">RUN OVER · RECEIPT</span>
+        <div class="score"><b id="rScore">0</b><span class="mono">POINTS <em class="best" id="rBest" hidden>NEW BEST!</em></span></div>
+        <div class="stats">
+          <div><b id="rDist">0</b><span>거리(M)</span></div>
+          <div><b id="rSplits">0</b><span>스플릿</span></div>
+          <div><b id="rCombo">0</b><span>최대 콤보</span></div>
+          <div><b id="rChips">0</b><span>바나나칩</span></div>
+        </div>
+        <div class="made"><img id="rImg" alt="오늘 달린 덩스" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><div><b id="rMadeT">오늘의 바나나 스플릿</b><p id="rMadeP"></p></div></div>
+        <div class="rew"><div class="rh">STICKERS</div><div class="row" id="rStk"></div></div>
+        <div class="bridge" id="bridge" hidden><p>오늘 달린 이 덩스, <b>실물 모듈 토이</b>로도 만날 수 있어.</p><a class="btn btn--pink btn--sm" id="bShop" target="_blank" rel="noopener">SHOP THIS DUNGS ↗</a></div>
+      </div>
+      <div class="acts">
+        <button class="btn" id="bAgain">ONE MORE RUN</button>
+        <button class="btn btn--ghost" id="bBook2">STICKER BOOK</button>
+        <button class="btn btn--ghost" id="bEdit">덩스 꾸미기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 도감 -->
+  <section class="screen dim center" id="book" hidden aria-label="스티커 도감">
+    <div class="card">
+      <h2>MELT STICKER BOOK</h2>
+      <p style="margin:0;font-weight:700" id="bookSub">스플릿을 완성할 때마다 스티커 한 장. 같은 스티커 세 장이면 홀로.</p>
+      <div class="book-grid" id="bookGrid"></div>
+      <div class="medals" id="medals"></div>
+      <div class="btns"><button class="btn" data-close>CLOSE</button></div>
+    </div>
+  </section>
+
+  <div id="loading"><div class="box"><img class="load-logo" src="images/logo/logo.svg" alt="BANANA SPLIT" width="701" height="500"><div class="bar"><i id="loadBar"></i></div><span class="mono" id="loadTxt">LOADING DUNGS…</span></div></div>
+</div>
+
+<script src="dungs-glb.js"></script>
+<script src="board-glb.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+/* ═════════════ 설정 ═════════════ */
+/* 실물 구매 링크 — 주소가 확정되면 채우거나 ?shop=URL 로 넘긴다 */
+const SHOP_URL_DEFAULT = '';
+
+const C = { ink:'#1E1B1F', cream:'#F7E7CE', asphalt:'#EE9C59', sun:'#F7B878', dusk:'#C66E35', cherry:'#EC4A86', banana:'#F8CB3C', skate:'#3FA9E0', mint:'#8ED7B9', choco:'#6A4230' };
+const FLAVORS = [
+  { id:'strawberry', ko:'딸기',     en:'STRAWBERRY', hex:'#ED5579' },
+  { id:'choco',      ko:'초코',     en:'CHOCO',      hex:'#754C3A' },
+  { id:'vanilla',    ko:'바닐라',   en:'VANILLA',    hex:'#F2D9BC' },
+  { id:'mint',       ko:'민트초코', en:'MINT CHIP',  hex:'#8FD3BE' },
+  { id:'banana',     ko:'바나나',   en:'BANANA',     hex:'#F0C747' },
+  { id:'blueberry',  ko:'블루베리', en:'BLUEBERRY',  hex:'#4AA8D1' },
+  { id:'matcha',     ko:'말차',     en:'MATCHA',     hex:'#A8C06B' },
+  { id:'mango',      ko:'망고',     en:'MANGO',      hex:'#F2A03D' }
+];
+const FL = Object.fromEntries(FLAVORS.map(f => [f.hex, f]));
+/* 바나나 보드 껍질 색 — 키가 ?bb= 값이 된다 */
+const BOARDS = { yellow:{ko:'노랑',hex:'#F6CF4A'}, green:{ko:'풋바나나',hex:'#A9C94B'}, pink:{ko:'핑크',hex:'#F28DB2'}, blue:{ko:'블루',hex:'#5DB7E6'}, mint:{ko:'민트',hex:'#8ED7B9'}, choco:{ko:'초코 디핑',hex:'#6A4230'} };
+/* 코 6종 — 하트 모양은 그대로, 색만 바뀐다. 키가 ?n= 값이 된다 */
+const NOSES = { cherry:{ko:'체리',hex:'#9E1B32'}, choco:{ko:'초코',hex:'#754C3A'}, mango:{ko:'망고',hex:'#F2A03D'}, blueberry:{ko:'블루베리',hex:'#4AA8D1'}, mochi:{ko:'찹쌀떡',hex:'#F2D9BC'}, jelly:{ko:'젤리',hex:'#5DC45E',em:'#1F8F36'} };
+/* 모델 파일 — 메쉬(노드) 이름으로 단을 찾는다. 블렌더의 .001 꼬리표는 무시
+   Dungscream_final.glb: Bottom(+귀·꼬리) · Middle · Top · Nose · Eye_L(두 눈) */
+const DUNGS_FILE = 'Dungscream_final.glb', BOARD_FILE = 'bananaboard.glb';
+const PARTS = { bottom:/^Bottom$/i, middle:/^Middle$/i, head:/^(Top|Head)$/i, nose:/^Nose$/i, eyes:/^Eyes?([_.]?[LR])?$/i };
+const PART_NEED = ['bottom', 'middle', 'head', 'eyes'];
+const LANES = [-2.1, 0, 2.1];
+const ZONES = [
+  { at:0,    name:'SUNSET HILL',  top:'#E9824A', hor:'#FCD38E', fog:'#F2A86A', light:'#FFF1DC', hemiG:'#E0622B', road:'#FFFFFF', lamp:0 },
+  { at:550,  name:'PINK DUSK',    top:'#6F4E9C', hor:'#F28AA6', fog:'#D97C93', light:'#FFD7E2', hemiG:'#7B3F6A', road:'#E6B9C9', lamp:.5 },
+  { at:1300, name:'NEON NIGHT',   top:'#151A3A', hor:'#3C4C8E', fog:'#2A3264', light:'#BFD3FF', hemiG:'#1A1F44', road:'#7E8BC4', lamp:1 }
+];
+const STICKERS = [
+  { id:0, en:'BANANA BOARD', ko:'바나나 보드', rar:0 }, { id:1, en:'DRIP SCOOP', ko:'흘러내린 스쿱', rar:0 },
+  { id:2, en:'CHERRY NOSE', ko:'체리 하트 코', rar:0 }, { id:3, en:'SPRAY STAR', ko:'스프레이 별', rar:0 },
+  { id:4, en:'CHECKER FLAG', ko:'체커 깃발', rar:0 }, { id:5, en:'WET PAINT', ko:'칠 주의', rar:0 },
+  { id:6, en:'SPRAY CAN', ko:'스프레이 캔', rar:1 }, { id:7, en:'SLEEPY EYES', ko:'처진 실눈', rar:1 },
+  { id:8, en:'SPLIT BOAT', ko:'스플릿 보트', rar:1 }, { id:9, en:'3 TIER TOWER', ko:'3단 타워', rar:1 },
+  { id:10, en:'GOLD BANANA', ko:'황금 바나나', rar:2 }, { id:11, en:'MELT CROWN', ko:'멜트 크라운', rar:2 }
+];
+const RAR = [{ en:'COMMON', w:70 }, { en:'RARE', w:24 }, { en:'EPIC', w:6 }];
+const MEDALS = [{ n:3, name:'ROOKIE ROLLER' }, { n:6, name:'SPLIT SKATER' }, { n:9, name:'SPRAY KING' }, { n:12, name:'MELT CLUB ♛' }];
+
+/* ═════════════ 저장 · 파라미터 ═════════════ */
+const store = (() => {
+  const K = 'bs.v1';
+  let s = null; try { s = JSON.parse(localStorage.getItem(K) || 'null'); } catch (e) {}
+  s = Object.assign({ best:0, runs:0, splits:0, owned:Array(12).fill(0), mute:false, build:null, pity:0 }, s || {});
+  if (!Array.isArray(s.owned) || s.owned.length !== 12) s.owned = Array(12).fill(0);
+  s.save = () => { try { const c = Object.assign({}, s); delete c.save; localStorage.setItem(K, JSON.stringify(c)); } catch (e) {} };
+  return s;
+})();
+const Q = new URLSearchParams(location.search);
+function hexParam(k) { const v = (Q.get(k) || '').replace('#', '').toUpperCase(); return /^[0-9A-F]{6}$/.test(v) && FL['#' + v] ? '#' + v : null; }
+const build = Object.assign({ b:'#ED5579', m:'#754C3A', h:'#F2D9BC', nose:'cherry', board:'yellow' }, store.build || {});
+if (!BOARDS[build.board]) build.board = 'yellow';
+if (!NOSES[build.nose]) build.nose = 'cherry';
+if (NOSES[Q.get('n')]) build.nose = Q.get('n');
+['b','m','h'].forEach(k => { const v = hexParam(k); if (v) build[k] = v; });
+if (BOARDS[Q.get('bb')]) build.board = Q.get('bb');
+const SHOP_URL = (() => { const u = Q.get('shop') || SHOP_URL_DEFAULT; return /^https?:\/\//.test(u) ? u : ''; })();
+
+/* ═════════════ 렌더러 · 씬 ═════════════ */
+const cv = document.getElementById('cv');
+const renderer = new THREE.WebGLRenderer({ canvas:cv, antialias:true, powerPreference:'high-performance', preserveDrawingBuffer:true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(ZONES[0].fog, 45, 165);
+const camera = new THREE.PerspectiveCamera(52, 1, .1, 400);
+const hemi = new THREE.HemisphereLight('#FFE6CC', ZONES[0].hemiG, 1.15); scene.add(hemi);
+const key = new THREE.DirectionalLight(ZONES[0].light, 2.6); key.position.set(4, 8, 6); scene.add(key);
+
+/* 툰 재질 — 사이트 빌더와 같은 4단 램프 + 망점 + 레진 입자 */
+const RAMP = (() => { const d = new Uint8Array([107, 163, 217, 255]); const t = new THREE.DataTexture(d, 4, 1, THREE.RedFormat); t.minFilter = t.magFilter = THREE.NearestFilter; t.generateMipmaps = false; t.needsUpdate = true; return t; })();
+const SH = { uPx:{ value:renderer.getPixelRatio() }, uCell:{ value:5 }, uHt:{ value:.92 }, uHr:{ value:.55 }, uGrain:{ value:.07 } };
+function inkify(m) {
+  m.customProgramCacheKey = () => 'bs-toon';
+  m.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, { uPx:SH.uPx, uCell:SH.uCell, uHt:SH.uHt, uHr:SH.uHr, uGrain:SH.uGrain });
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vOP;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvOP = position;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+      varying vec3 vOP; uniform float uPx, uCell, uHt, uHr, uGrain;
+      float dHash(vec3 p){ p = fract(p * .1031); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); }`)
+    .replace('#include <opaque_fragment>', `{
+      vec3 lit = outgoingLight - totalEmissiveRadiance;
+      float al = max(dot(diffuseColor.rgb, vec3(.299,.587,.114)), .03);
+      float r = dot(lit, vec3(.299,.587,.114)) / al;
+      float t = clamp((uHt - r) / uHr, 0., 1.);
+      vec2 fc = gl_FragCoord.xy / (uCell * uPx); mat2 R = mat2(.7071,-.7071,.7071,.7071); vec2 cl = fract(R * fc) - .5;
+      float rad = .66 * sqrt(t); float dm = (1. - smoothstep(rad - .07, rad + .07, length(cl))) * step(.02, t);
+      vec3 inkT = mix(diffuseColor.rgb * .3, vec3(.12,.11,.13), .5);
+      outgoingLight = mix(outgoingLight, inkT + totalEmissiveRadiance, dm);
+      outgoingLight *= 1. + (dHash(floor(vOP * 260.)) - .5) * uGrain;
+    }
+    #include <opaque_fragment>`);
+  };
+  return m;
+}
+function toon(color, extra) { return inkify(new THREE.MeshToonMaterial(Object.assign({ color, gradientMap:RAMP }, extra || {}))); }
+const hullMats = {};
+function hullMat(w) {
+  const k = w.toFixed(4); if (hullMats[k]) return hullMats[k];
+  return hullMats[k] = new THREE.ShaderMaterial({ side:THREE.BackSide, fog:true,
+    uniforms:THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uC:{ value:new THREE.Color(C.ink) }, uW:{ value:w } }]),
+    vertexShader:`uniform float uW;
+      #include <fog_pars_vertex>
+      void main(){ vec3 p = position; float wob = 1. + .34 * sin(p.x*43.+p.y*29.) * sin(p.z*37.+p.x*21.); p += normalize(normal) * uW * wob;
+        vec4 mvPosition = modelViewMatrix * vec4(p,1.); gl_Position = projectionMatrix * mvPosition;
+        #include <fog_vertex>
+      }`,
+    fragmentShader:`uniform vec3 uC;
+      #include <fog_pars_fragment>
+      void main(){ gl_FragColor = vec4(uC,1.);
+        #include <colorspace_fragment>
+        #include <fog_fragment>
+      }` });
+}
+const hullGeo = new Map();
+function outline(mesh, w) {
+  let g = hullGeo.get(mesh.geometry);
+  if (!g) { g = mesh.geometry.clone(); Object.keys(g.attributes).forEach(k => { if (k !== 'position') g.deleteAttribute(k); }); g.setIndex(g.index); g = mergeVertices(g, 1e-4); g.computeVertexNormals(); hullGeo.set(mesh.geometry, g); }
+  const h = new THREE.Mesh(g, hullMat(w)); h.raycast = () => {}; mesh.add(h); return h;
+}
+function tmesh(geo, color, w, extra) { const m = new THREE.Mesh(geo, toon(color, extra)); if (w) outline(m, w); return m; }
+
+/* ═════════════ 교체용 이미지 (images/ 폴더) ═════════════
+   images/ 안에 같은 이름·같은 규격의 PNG를 넣으면 코드로 그린 그림 대신 그 파일을 쓴다.
+   파일이 없으면 지금처럼 코드로 그린다. (벽·현수막·바닥은 http 주소에서만 교체돼: 파일 더블클릭 실행 시엔 브라우저 보안상 기본 그림 사용) */
+const ART_FILES = {
+  logo:'images/logo/logo.svg',
+  wall:Array.from({ length:10 }, (_, i) => 'images/wall/wall_' + String(i + 1).padStart(2, '0') + '.png'),
+  banner:['images/banner/banner_1_melt-club.png', 'images/banner/banner_2_wet-paint.png', 'images/banner/banner_3_split-zone.png'],
+  road:[1, 2, 3, 4].map(n => 'images/road/road_' + n + '.png'),
+  sticker:['banana-board', 'drip-scoop', 'cherry-nose', 'spray-star', 'checker-flag', 'wet-paint', 'spray-can', 'sleepy-eyes', 'split-boat', '3-tier-tower', 'gold-banana', 'melt-crown'].map((n, i) => 'images/sticker/sticker_' + String(i + 1).padStart(2, '0') + '_' + n + '.png')
+};
+const ART = { logo:null, wall:[], banner:[], road:[], sticker:[] };
+function loadImg(src) { return new Promise(ok => { if (window.BS_NO_ART) return ok(null); const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; }); }
+function texSafe(img) { if (!img) return null; try { const c = document.createElement('canvas'); c.width = c.height = 1; const x = c.getContext('2d'); x.drawImage(img, 0, 0, 1, 1); x.getImageData(0, 0, 1, 1); return img; } catch (e) { return null; } }
+async function loadArt() {
+  const all = (list, ok) => Promise.all(list.map(loadImg)).then(a => ok ? a.map(texSafe) : a);
+  [ART.logo, ART.wall, ART.banner, ART.road, ART.sticker] = await Promise.all([loadImg(ART_FILES.logo), all(ART_FILES.wall, 1), all(ART_FILES.banner, 1), all(ART_FILES.road, 1), all(ART_FILES.sticker)]);
+}
+
+/* ═════════════ 캔버스 텍스처: 그래피티 ═════════════ */
+function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function cnv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+function tex(c, rep) { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; } return t; }
+function noise(x, w, h, n, a, r) { for (let i = 0; i < n; i++) { x.fillStyle = r() < .5 ? `rgba(30,27,31,${a})` : `rgba(255,255,255,${a * .8})`; x.fillRect(r() * w, r() * h, 1 + r() * 3, 1 + r() * 3); } }
+function star(x, cx, cy, r1, r2, n) { x.beginPath(); for (let i = 0; i < n * 2; i++) { const a = -Math.PI / 2 + i * Math.PI / n, r = i % 2 ? r2 : r1; x.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } x.closePath(); }
+function crown(x, cx, cy, s) { x.beginPath(); x.moveTo(cx - s, cy + s * .6); x.lineTo(cx - s * .9, cy - s * .5); x.lineTo(cx - s * .4, cy + s * .05); x.lineTo(cx, cy - s * .75); x.lineTo(cx + s * .4, cy + s * .05); x.lineTo(cx + s * .9, cy - s * .5); x.lineTo(cx + s, cy + s * .6); x.closePath(); }
+const TAGS = ['MELT CLUB', 'DUNGS', 'BANANA SPLIT', 'SPLIT!', 'TOYBIRTH', '3 TIERS', 'MELT', 'SCOOP', '녹기 전에', '쌓고 달린다', '덩스크림'];
+const WALL_BASE = ['#F7E7CE', '#EC4A86', '#3FA9E0', '#F8CB3C', '#8ED7B9', '#1E1B1F', '#C66E35', '#F7B878'];
+const ACC = ['#F8CB3C', '#EC4A86', '#3FA9E0', '#8ED7B9', '#F7E7CE'];
+function wallTexture(seed) {
+  const W = 1024, H = 448, c = cnv(W, H), x = c.getContext('2d'), r = rng(seed);
+  const base = WALL_BASE[seed % WALL_BASE.length]; x.fillStyle = base; x.fillRect(0, 0, W, H);
+  noise(x, W, H, 2600, .06, r);
+  x.strokeStyle = 'rgba(30,27,31,.22)'; x.lineWidth = 3; for (let i = 1; i < 4; i++) { x.beginPath(); x.moveTo(i * W / 4 + r() * 8, 0); x.lineTo(i * W / 4, H); x.stroke(); }
+  for (let i = 0; i < 4; i++) { const g = x.createRadialGradient(0, 0, 0, 0, 0, 1); const col = ACC[(seed + i) % ACC.length]; g.addColorStop(0, col + 'CC'); g.addColorStop(1, col + '00'); x.save(); x.translate(r() * W, r() * H); x.scale(120 + r() * 160, 90 + r() * 120); x.fillStyle = g; x.beginPath(); x.arc(0, 0, 1, 0, 7); x.fill(); x.restore(); }
+  /* 체커 띠 */
+  if (r() < .6) { const y0 = H - 46; for (let i = 0; i < W / 23; i++) for (let j = 0; j < 2; j++) { x.fillStyle = (i + j) % 2 ? C.ink : C.cream; x.fillRect(i * 23, y0 + j * 23, 23, 23); } }
+  /* 포스터 */
+  for (let i = 0; i < 2; i++) { if (r() < .5) continue; const px = 40 + r() * (W - 240), py = 40 + r() * 120; x.save(); x.translate(px, py); x.rotate((r() - .5) * .2); x.fillStyle = C.cream; x.strokeStyle = C.ink; x.lineWidth = 6; x.fillRect(0, 0, 150, 190); x.strokeRect(0, 0, 150, 190); x.fillStyle = ACC[i + seed % 3]; x.fillRect(12, 12, 126, 110);
+    x.fillStyle = C.ink; x.lineWidth = 5; x.beginPath(); x.moveTo(42, 66); x.quadraticCurveTo(56, 56, 68, 56); x.stroke(); x.beginPath(); x.moveTo(82, 56); x.quadraticCurveTo(94, 56, 108, 66); x.stroke();
+    x.font = '400 26px Bungee'; x.textAlign = 'center'; x.fillText(r() < .5 ? 'DUNGS' : 'SPLIT', 75, 160); x.fillStyle = 'rgba(247,231,206,.6)'; x.fillRect(50, -10, 50, 20); x.restore(); }
+  /* 큰 태그 */
+  const n = 1 + (r() < .6 ? 1 : 0);
+  for (let i = 0; i < n; i++) {
+    const t = TAGS[Math.floor(r() * TAGS.length)], ko = /[가-힣]/.test(t);
+    const fs = ko ? 120 + r() * 40 : 104 + r() * 50; x.save(); x.translate(60 + r() * 160 + i * 380, 190 + r() * 120 + i * 40); x.rotate((r() - .5) * .22);
+    x.font = `400 ${fs}px ${ko ? '"Black Han Sans"' : 'Bungee'}`; x.lineJoin = 'round';
+    let fill = ACC[Math.floor(r() * ACC.length)]; if (fill === base) fill = C.cherry;
+    x.fillStyle = C.ink; x.fillText(t, 10, 12);
+    x.lineWidth = 16; x.strokeStyle = C.ink; x.strokeText(t, 0, 0); x.fillStyle = fill; x.fillText(t, 0, 0);
+    const tw = Math.min(x.measureText(t).width, W);
+    x.fillStyle = fill; x.strokeStyle = C.ink; x.lineWidth = 4;
+    for (let d = 0; d < 6; d++) { const dx = r() * tw, dl = 20 + r() * 80, dw = 7 + r() * 7; x.beginPath(); x.roundRect(dx, 4, dw, dl, dw / 2); x.fill(); x.stroke(); }
+    x.restore();
+  }
+  /* 낙서 */
+  x.lineWidth = 6; x.strokeStyle = C.ink; x.lineCap = 'round';
+  for (let i = 0; i < 4; i++) { const k = r(), cx = r() * W, cy = 40 + r() * (H - 120);
+    if (k < .3) { star(x, cx, cy, 34, 14, 5); x.fillStyle = ACC[i % 5]; x.fill(); x.stroke(); }
+    else if (k < .55) { crown(x, cx, cy, 30); x.fillStyle = C.banana; x.fill(); x.stroke(); }
+    else if (k < .8) { x.beginPath(); x.moveTo(cx, cy); x.quadraticCurveTo(cx + 50, cy - 40, cx + 110, cy - 10); x.stroke(); x.beginPath(); x.moveTo(cx + 92, cy - 30); x.lineTo(cx + 112, cy - 10); x.lineTo(cx + 88, cy + 4); x.stroke(); }
+    else { x.beginPath(); x.arc(cx, cy, 26, 0, 7); x.fillStyle = C.cream; x.fill(); x.stroke(); x.beginPath(); x.moveTo(cx - 13, cy - 2); x.quadraticCurveTo(cx - 7, cy - 7, cx - 2, cy - 7); x.stroke(); x.beginPath(); x.moveTo(cx + 2, cy - 7); x.quadraticCurveTo(cx + 7, cy - 7, cx + 13, cy - 2); x.stroke(); }
+  }
+  return tex(c);
+}
+function roadTexture(v) {
+  const W = 512, H = 1024, c = cnv(W, H), x = c.getContext('2d'), r = rng(100 + v);
+  x.fillStyle = '#9C5B3B'; x.fillRect(0, 0, W, H); noise(x, W, H, 7000, .09, r);
+  for (let i = 0; i < 18; i++) { x.fillStyle = `rgba(30,27,31,${.05 + r() * .08})`; x.beginPath(); x.ellipse(r() * W, r() * H, 20 + r() * 60, 10 + r() * 30, r() * 3, 0, 7); x.fill(); }
+  const px = xm => (xm / 7.6 + .5) * W;
+  x.fillStyle = C.banana; x.fillRect(px(-3.7), 0, 8, H); x.fillRect(px(3.7) - 8, 0, 8, H);
+  x.fillStyle = 'rgba(247,231,206,.9)'; [-1.05, 1.05].forEach(l => { for (let y = 0; y < H; y += 128) x.fillRect(px(l) - 5, y + 20, 10, 64); });
+  if (v === 1) { x.save(); x.translate(px(LANES[Math.floor(r() * 3)]), 520); x.rotate(.3); star(x, 0, 0, 70, 30, 5); x.fillStyle = 'rgba(236,74,134,.85)'; x.fill(); x.lineWidth = 8; x.strokeStyle = 'rgba(30,27,31,.8)'; x.stroke(); x.restore(); }
+  if (v === 2) { for (let i = 0; i < 16; i++) for (let j = 0; j < 3; j++) { x.fillStyle = (i + j) % 2 ? 'rgba(30,27,31,.75)' : 'rgba(247,231,206,.8)'; x.fillRect(px(-3.6) + i * 30, 300 + j * 30, 30, 30); } }
+  if (v === 3) { x.save(); x.translate(W / 2, 640); x.rotate(-Math.PI / 2); x.font = '400 80px Bungee'; x.textAlign = 'center'; x.lineWidth = 10; x.strokeStyle = 'rgba(30,27,31,.8)'; x.strokeText('SPLIT', 0, 28); x.fillStyle = 'rgba(248,203,60,.9)'; x.fillText('SPLIT', 0, 28); x.restore(); }
+  return tex(c);
+}
+function bannerTexture(txt, col) {
+  const c = cnv(512, 220), x = c.getContext('2d'); x.fillStyle = col; x.fillRect(0, 0, 512, 220);
+  for (let i = 0; i < 12; i++) { x.fillStyle = 'rgba(30,27,31,.9)'; x.fillRect(i * 44, 0, 22, 18); x.fillStyle = 'rgba(247,231,206,.95)'; x.fillRect(i * 44 + 22, 0, 22, 18); }
+  x.font = '400 78px Bungee'; x.textAlign = 'center'; x.lineJoin = 'round'; x.lineWidth = 12; x.strokeStyle = C.ink; x.strokeText(txt, 256, 140); x.fillStyle = C.cream; x.fillText(txt, 256, 140);
+  x.fillStyle = C.ink; x.font = '700 20px "Space Mono"'; x.fillText('↓ DUCK ↓', 256, 196);
+  return tex(c);
+}
+function checkerTexture() { const c = cnv(64, 64), x = c.getContext('2d'); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { x.fillStyle = (i + j) % 2 ? C.ink : C.cream; x.fillRect(i * 16, j * 16, 16, 16); } const t = tex(c, true); t.magFilter = THREE.NearestFilter; return t; }
+function blobTexture() { const c = cnv(128, 128), x = c.getContext('2d'); const g = x.createRadialGradient(64, 64, 10, 64, 64, 62); g.addColorStop(0, 'rgba(30,27,31,.55)'); g.addColorStop(1, 'rgba(30,27,31,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); return tex(c); }
+function sprayDotTexture() { const c = cnv(128, 128), x = c.getContext('2d'), r = rng(7); x.fillStyle = '#fff'; x.beginPath(); x.arc(64, 64, 40, 0, 7); x.fill(); for (let i = 0; i < 160; i++) { const a = r() * 7, d = 38 + r() * 24; x.beginPath(); x.arc(64 + Math.cos(a) * d, 64 + Math.sin(a) * d, r() * 3.2, 0, 7); x.fill(); } return tex(c); }
+
+/* ═════════════ 하늘 ═════════════ */
+const skyU = { top:{ value:new THREE.Color(ZONES[0].top) }, hor:{ value:new THREE.Color(ZONES[0].hor) }, sunC:{ value:new THREE.Color('#FFE9A8') } };
+const sky = new THREE.Mesh(new THREE.SphereGeometry(300, 32, 16), new THREE.ShaderMaterial({ side:THREE.BackSide, depthWrite:false, fog:false, uniforms:skyU,
+  vertexShader:'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }',
+  fragmentShader:`uniform vec3 top, hor, sunC; varying vec3 vP;
+    void main(){ float h = clamp(vP.y * 2.2, 0., 1.); vec3 c = mix(hor, top, pow(h, .7));
+      vec3 sd = normalize(vec3(-.25, .12, -1.)); float s = dot(vP, sd); c = mix(c, sunC, smoothstep(.985, .99, s));
+      float band = step(.985, s) * step(.5, fract((vP.y) * 90.)) * step(vP.y, .13); c = mix(c, hor, band * .8);
+      c += sunC * pow(max(s, 0.), 18.) * .25; gl_FragColor = vec4(c, 1.);
+      #include <colorspace_fragment>
+    }` }));
+scene.add(sky);
+
+/* ═════════════ 월드: 골목 세그먼트 ═════════════ */
+const SEG = 30, NSEG = 8;
+const world = new THREE.Group(); scene.add(world);
+let roadTex = [0, 1, 2, 3].map(roadTexture);
+const roadMats = roadTex.map(t => new THREE.MeshBasicMaterial({ map:t }));
+let wallTex = [];
+const wallGeo = new THREE.PlaneGeometry(SEG, 7.5);
+const checkTex = checkerTexture();
+const curbMat = new THREE.MeshBasicMaterial({ map:checkTex });
+checkTex.repeat.set(30, 1);
+const walkMat = new THREE.MeshBasicMaterial({ color:'#D9A27A' });
+const palmTrunk = toon('#5A3A2E'), palmLeaf = toon('#3E5A3A');
+const lampMat = toon(C.ink), lampHead = new THREE.MeshBasicMaterial({ color:'#FFE9A8' });
+const segs = [];
+function makePalm() {
+  const g = new THREE.Group(); let y = 0, x = 0;
+  for (let i = 0; i < 6; i++) { const s = tmesh(new THREE.CylinderGeometry(.16 - i * .012, .19 - i * .012, 1.4, 7), '#6B4433', .02); s.material = palmTrunk; s.position.set(x, y + .7, 0); s.rotation.z = -.06 * i; g.add(s); y += 1.36; x += .09 * i; }
+  for (let i = 0; i < 7; i++) { const l = new THREE.Mesh(new THREE.ConeGeometry(.42, 2.8, 4), palmLeaf); l.scale.z = .25; l.position.set(x, y + .1, 0); l.rotation.set(0, i / 7 * Math.PI * 2, 0); l.rotateX(1.95); l.translateY(1.3); g.add(l); }
+  return g;
+}
+function makeLamp() {
+  const g = new THREE.Group(); const p = new THREE.Mesh(new THREE.CylinderGeometry(.07, .09, 6, 6), lampMat); p.position.y = 3; g.add(p);
+  const a = new THREE.Mesh(new THREE.BoxGeometry(1.2, .1, .1), lampMat); a.position.set(-.6, 6, 0); g.add(a);
+  const h = new THREE.Mesh(new THREE.BoxGeometry(.5, .18, .3), lampHead); h.position.set(-1.15, 5.9, 0); g.add(h); g.userData.head = h; return g;
+}
+function makeSeg(i) {
+  const g = new THREE.Group();
+  const road = new THREE.Mesh(new THREE.PlaneGeometry(7.6, SEG), roadMats[i % 4]); road.rotation.x = -Math.PI / 2; g.add(road);
+  [-1, 1].forEach(s => {
+    const walk = new THREE.Mesh(new THREE.BoxGeometry(2.2, .28, SEG), walkMat); walk.position.set(s * 4.9, .14, 0); g.add(walk);
+    const curb = new THREE.Mesh(new THREE.PlaneGeometry(SEG, .28), curbMat); curb.rotation.y = s * -Math.PI / 2; curb.position.set(s * 3.8, .14, 0); g.add(curb);
+    const wall = new THREE.Mesh(wallGeo, new THREE.MeshBasicMaterial({ map:null })); wall.rotation.y = s * -Math.PI / 2; wall.position.set(s * 6, 3.75, 0); g.add(wall);
+    g.userData[s < 0 ? 'wl' : 'wr'] = wall;
+  });
+  const palm = makePalm(); g.add(palm); g.userData.palm = palm;
+  const lamp = makeLamp(); g.add(lamp); g.userData.lamp = lamp;
+  world.add(g); return g;
+}
+let segSeed = 1;
+function dressSeg(g) {
+  g.userData.wl.material.map = wallTex[(segSeed * 3) % wallTex.length]; g.userData.wr.material.map = wallTex[(segSeed * 5 + 1) % wallTex.length];
+  g.userData.wl.material.needsUpdate = g.userData.wr.material.needsUpdate = true;
+  const r = rng(segSeed++); const side = r() < .5 ? -1 : 1;
+  g.userData.palm.visible = r() < .55; g.userData.palm.position.set(side * 5.1, .28, (r() - .5) * 20); g.userData.palm.scale.setScalar(.8 + r() * .5);
+  g.userData.lamp.position.set(-side * 4.6, .28, (r() - .5) * 20); g.userData.lamp.rotation.y = side < 0 ? Math.PI : 0;
+}
+
+/* ═════════════ 캐릭터: 덩스 + 바나나 보드 ═════════════ */
+const player = new THREE.Group(); scene.add(player);
+const lean = new THREE.Group(); player.add(lean);
+const rigWrap = new THREE.Group(); lean.add(rigWrap);
+const board = new THREE.Group(); lean.add(board);
+const blob = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), new THREE.MeshBasicMaterial({ map:blobTexture(), transparent:true, depthWrite:false })); blob.rotation.x = -Math.PI / 2; blob.position.y = .02; player.add(blob);
+let D = null; /* 덩스 리그 */
+const boardGlow = new THREE.Color(0, 0, 0);
+/* 코드로 그린 예비 보드 — bananaboard.glb를 못 읽었을 때만 쓴다 */
+function makeBoard() {
+  const peel = tmesh(new THREE.CapsuleGeometry(.26, 1.25, 6, 14), BOARDS[build.board].hex, .022); peel.rotation.x = Math.PI / 2; peel.scale.set(1, 1, .42); peel.position.y = .3; board.add(peel);
+  const fruit = tmesh(new THREE.CapsuleGeometry(.17, 1.05, 6, 12), '#FFF1C9', .016); fruit.rotation.x = Math.PI / 2; fruit.scale.set(1, 1, .4); fruit.position.y = .39; board.add(fruit);
+  [-.86, .86].forEach(z => { const tip = tmesh(new THREE.SphereGeometry(.09, 8, 6), '#6A4230', .012); tip.position.set(0, .3, z); board.add(tip); });
+  const wm = toon(C.cherry), wheels = []; [-.5, .5].forEach(z => [-.24, .24].forEach(x => { const w = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .1, 12), wm); outline(w, .014); w.rotation.z = Math.PI / 2; w.position.set(x, .11, z); board.add(w); wheels.push(w); }));
+  const truck = new THREE.Mesh(new THREE.BoxGeometry(.5, .06, .1), toon('#3A3540')); [-.5, .5].forEach(z => { const t = truck.clone(); t.position.set(0, .18, z); board.add(t); });
+  Object.assign(board.userData, { peel, wheels, spin:'x', deck:.44 });
+}
+
+/* glb 읽기: 스크립트로 묶은 base64가 있으면 그걸 (file:// 더블클릭용), 없으면 파일에서 */
+async function loadGLB(file, b64, onProgress) {
+  if (b64) {
+    const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer; if (onProgress) onProgress(1);
+    return new Promise((ok, no) => new GLTFLoader().parse(bin, '', ok, no));
+  }
+  return new GLTFLoader().loadAsync(file, e => { if (e.total && onProgress) onProgress(e.loaded / e.total); });
+}
+
+/* 바나나 보드 (bananaboard.glb) — banana · axis_F/B(트럭) · part_F/B(베이스) · wheel_L/R_F/B
+   모델은 x축이 길이(F = 앞, -x). 게임은 -z로 달리니 y축으로 -90° 돌린다 */
+const BOARD_SCALE = 2.1;
+async function loadBoard() {
+  const gltf = await loadGLB(BOARD_FILE, window.BOARD_GLB);
+  const bb = gltf.scene, by = {}; bb.traverse(o => { if (o.isMesh) by[o.name] = o; });
+  if (!by.banana) throw new Error('bananaboard.glb: banana 메쉬가 없어');
+  const ow = .012 / BOARD_SCALE;
+  /* 껍질: 단색 툰 + 꼭지·끝은 정점색으로 어둡게 (색을 바꿔도 바나나로 읽히게) */
+  const bg = by.banana.geometry, bp = bg.attributes.position, col = new Float32Array(bp.count * 3);
+  bg.computeBoundingBox(); const x0 = bg.boundingBox.min.x, x1 = bg.boundingBox.max.x, L = x1 - x0;
+  const ss = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+  for (let i = 0; i < bp.count; i++) { const x = bp.getX(i); const k = 1 - .5 * Math.max(ss(x1 - L * .14, x1 - L * .06, x), ss(x0 + L * .05, x0 + L * .01, x)); col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = k; }
+  bg.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const peelMat = toon(BOARDS[build.board].hex, { vertexColors:true }); by.banana.material = peelMat; outline(by.banana, ow);
+  const metal = toon('#3A3540'), wm = toon(C.cherry), wheels = [];
+  for (const [n, m] of Object.entries(by)) {
+    if (n === 'banana') continue;
+    if (n.startsWith('wheel')) { m.material = wm; outline(m, ow); wheels.push(m); }
+    else { m.material = metal; outline(m, ow * .8); }
+  }
+  bb.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+  bb.rotation.y = -Math.PI / 2; bb.scale.setScalar(BOARD_SCALE); board.add(bb); board.updateMatrixWorld(true);
+  /* 덱 높이: 보드 가운데를 위에서 쏴서 바나나 윗면을 찾는다 */
+  const rc = new THREE.Raycaster(new THREE.Vector3(0, 5, 0), new THREE.Vector3(0, -1, 0)), hit = rc.intersectObject(by.banana, false)[0];
+  Object.assign(board.userData, { peel:by.banana, wheels, spin:'z', deck:hit ? hit.point.y - board.position.y : .5 });
+}
+
+/* 덩스 (Dungscream_final.glb) — Bottom(+귀·꼬리) · Middle · Top · Nose · Eyes
+   블렌더 단위(약 30) 그대로라 게임 크기로 줄여 정점에 구워 넣고, 단마다 받침점(피벗)을 둔다 */
+/* 서 있으면 머리가 현수막 아래 끝(1.5)보다 높고, 숙이면 그 아래로 내려가는 크기 */
+const DUNGS_WIDTH = 1.3, DUNGS_INK = DUNGS_WIDTH / .89;
+async function loadDungs(onProgress) {
+  const gltf = await loadGLB(DUNGS_FILE, window.DUNGS_GLB, onProgress);
+  const root = gltf.scene; root.updateMatrixWorld(true);
+  /* 파츠마다 메쉬 목록 (눈이 Eye_L · Eye_R로 따로 와도 합친다) */
+  const src = {}, base = n => (n || '').replace(/\.\d+$/, '');
+  root.traverse(o => { if (!o.isMesh) return; for (const [k, re] of Object.entries(PARTS)) if (re.test(base(o.name)) || (o.parent && re.test(base(o.parent.name)))) { (src[k] = src[k] || []).push(o); break; } });
+  for (const k of PART_NEED) if (!src[k]) throw new Error(DUNGS_FILE + ': ' + PARTS[k] + ' 메쉬가 없어');
+  /* 크기 맞추기: 아래 단 폭 → DUNGS_WIDTH, 바닥 → y 0, 가운데 단 중심 → x·z 0 */
+  const bxB = new THREE.Box3().setFromObject(src.bottom[0]), bxM = new THREE.Box3().setFromObject(src.middle[0]);
+  const s = DUNGS_WIDTH / (bxB.max.x - bxB.min.x), cM = bxM.getCenter(new THREE.Vector3());
+  const fit = new THREE.Matrix4().makeScale(s, s, s).multiply(new THREE.Matrix4().makeTranslation(-cM.x, -bxB.min.y, -cM.z));
+  const bake = o => { const g = o.geometry.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(fit, o.matrixWorld)); Object.keys(g.attributes).forEach(a => { if (a !== 'position' && a !== 'normal') g.deleteAttribute(a); }); return g; };
+  const geo = {}; for (const k in src) { const gs = src[k].map(bake); geo[k] = gs.length > 1 ? mergeGeometries(gs) : gs[0]; geo[k].computeBoundingBox(); }
+  /* 눈: 한쪽만 있으면 x=0 기준으로 거울 복사 */
+  { const b = geo.eyes.boundingBox; if (b.min.x > 0 || b.max.x < 0) { const r = geo.eyes.clone().applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1)); geo.eyes = mergeGeometries([geo.eyes, r]); geo.eyes.computeBoundingBox(); } }
+  /* 눈은 자기 중심에서 깜빡이도록 원점을 눈 가운데로 */
+  const eyeC = geo.eyes.boundingBox.getCenter(new THREE.Vector3()); geo.eyes.translate(-eyeC.x, -eyeC.y, -eyeC.z);
+  const N = {}, M = {}, mats = {};
+  ['bottom', 'middle', 'head'].forEach(k => { mats[k] = toon('#ffffff'); N[k] = M[k] = new THREE.Mesh(geo[k], mats[k]); outline(M[k], .0105 * DUNGS_INK); });
+  mats.eyes = toon(C.ink, { side:THREE.DoubleSide }); N.eyes = M.eyes = new THREE.Mesh(geo.eyes, mats.eyes); M.eyes.position.copy(eyeC);
+  if (geo.nose) { mats.nose = toon('#ffffff'); N.nose = M.nose = new THREE.Mesh(geo.nose, mats.nose); outline(M.nose, .0074 * DUNGS_INK); }
+  Object.values(M).forEach(m => { m.frustumCulled = false; });
+  /* 아래 → 가운데 → 머리 순서로 이어 붙여 젤리처럼 흔들리게 */
+  const rig = new THREE.Group(), pB = new THREE.Group(), pM = new THREE.Group(), pH = new THREE.Group();
+  rig.add(pB); pB.add(pM); pM.add(pH);
+  const gM = geo.middle.boundingBox, gH = geo.head.boundingBox;
+  pM.position.set(0, gM.min.y, (gM.min.z + gM.max.z) / 2); pH.position.set(0, gH.min.y - gM.min.y, (gH.min.z + gH.max.z) / 2 - pM.position.z);
+  rig.updateMatrixWorld(true);
+  pB.add(M.bottom); pM.attach(M.middle); pH.attach(M.head); pH.attach(M.eyes); if (M.nose) pH.attach(M.nose);
+  const eyeBase = M.eyes.scale.clone();
+  return { rig, pB, pM, pH, N, M, mats, eyeBase };
+}
+function lumHex(h) { const c = new THREE.Color(h); return c.r * .2126 + c.g * .7152 + c.b * .0722; }
+function applyBuild() {
+  if (board.userData.peel) board.userData.peel.material.color.set(BOARDS[build.board].hex);
+  if (D) {
+    D.mats.bottom.color.set(build.b); D.mats.middle.color.set(build.m); D.mats.head.color.set(build.h);
+    D.mats.eyes.color.set(lumHex(build.h) < .16 ? C.cream : C.ink);
+    if (D.mats.nose) { const n = NOSES[build.nose]; D.mats.nose.color.set(n.hex); D.mats.nose.emissive.set(n.em || '#000'); D.mats.nose.emissiveIntensity = n.em ? .18 : 0; }
+  }
+  store.build = { b:build.b, m:build.m, h:build.h, nose:build.nose, board:build.board }; store.save();
+}
+
+/* ═════════════ 스프링 ═════════════ */
+function spring(k, d) { return { x:0, v:0, k, d, step(t, dt) { const a = this.k * (t - this.x) - this.d * this.v; this.v += a * dt; this.x += this.v * dt; return this.x; } }; }
+const SP = { lean:spring(90, 12), tiltB:spring(160, 9), tiltM:spring(140, 7), tiltH:spring(120, 6), fwdM:spring(140, 7), fwdH:spring(110, 5.5), sq:spring(260, 14), sqH:spring(200, 9), duck:spring(420, 34) };
+
+/* ═════════════ 오브젝트 · 이펙트 풀 ═════════════ */
+const objs = []; /* { type, d, lane, mesh, ... } */
+const objGroup = new THREE.Group(); scene.add(objGroup);
+const GEO = {
+  cone:new THREE.ConeGeometry(.36, .95, 12), band:new THREE.CylinderGeometry(.25, .3, .16, 12), base:new THREE.BoxGeometry(.8, .1, .8),
+  plank:new THREE.BoxGeometry(1.9, .36, .14), leg:new THREE.BoxGeometry(.1, .9, .5),
+  post:new THREE.CylinderGeometry(.07, .07, 2.6, 6), banner:new THREE.BoxGeometry(2.1, .95, .06),
+  puddle:new THREE.CircleGeometry(.95, 18), chip:new THREE.CylinderGeometry(.24, .24, .08, 16), chipIn:new THREE.CylinderGeometry(.13, .13, .085, 12),
+  scoop:new THREE.SphereGeometry(.46, 22, 16), cone2:new THREE.ConeGeometry(.3, .7, 10), cherry:new THREE.SphereGeometry(.24, 14, 10), stem:new THREE.CylinderGeometry(.025, .025, .35, 5),
+  ring:new THREE.TorusGeometry(.72, .05, 6, 28)
+};
+const MAT = {
+  cone:toon(C.cherry), band:toon(C.cream), base:toon(C.ink), plank:toon('#ffffff', { map:checkTex.clone() }), leg:toon(C.banana),
+  post:toon(C.ink), puddle:toon('#F5B3C6', { transparent:true, opacity:.92 }), chip:toon('#F8D86A'), chipIn:toon('#D9A848'),
+  waffle:toon('#D9A15B'), cherry:toon('#9E1B32'), stem:toon('#3E5A3A'), ring:new THREE.MeshBasicMaterial({ color:C.banana })
+};
+MAT.plank.map.repeat.set(6, 1); MAT.plank.map.needsUpdate = true;
+let bannerTex = [bannerTexture('MELT CLUB', C.cherry), bannerTexture('WET PAINT', C.skate), bannerTexture('SPLIT ZONE', C.banana)];
+const scoopMats = Object.fromEntries(FLAVORS.map(f => [f.hex, toon(f.hex)]));
+function makeObj(type, opt) {
+  const g = new THREE.Group(); let o = { type, g, d:opt.d, lane:opt.lane, x:LANES[opt.lane], y:opt.y || 0, done:false };
+  if (type === 'cone') { const c = new THREE.Mesh(GEO.cone, MAT.cone); outline(c, .03); c.position.y = .52; g.add(c); const b = new THREE.Mesh(GEO.band, MAT.band); b.position.y = .5; g.add(b); const ba = new THREE.Mesh(GEO.base, MAT.base); ba.position.y = .05; g.add(ba); o.h = .78; }
+  if (type === 'barrier') { const p = new THREE.Mesh(GEO.plank, MAT.plank); outline(p, .03); p.position.y = .82; g.add(p); [-.8, .8].forEach(x => { const l = new THREE.Mesh(GEO.leg, MAT.leg); outline(l, .02); l.position.set(x, .45, 0); g.add(l); }); o.h = 1.0; }
+  if (type === 'banner') { [-1.02, 1.02].forEach(x => { const p = new THREE.Mesh(GEO.post, MAT.post); p.position.set(x, 1.3, 0); g.add(p); }); const b = new THREE.Mesh(GEO.banner, new THREE.MeshBasicMaterial({ map:bannerTex[opt.v % 3] })); outline(b, .03); b.position.y = 1.98; g.add(b); o.low = 1.45; }
+  if (type === 'puddle') { const p = new THREE.Mesh(GEO.puddle, MAT.puddle); p.rotation.x = -Math.PI / 2; p.position.y = .03; p.scale.set(1, 1.4, 1); g.add(p); }
+  if (type === 'chip') { const c = new THREE.Mesh(GEO.chip, MAT.chip); outline(c, .02); c.rotation.x = Math.PI / 2; const ci = new THREE.Mesh(GEO.chipIn, MAT.chipIn); c.add(ci); g.add(c); o.spin = c; }
+  if (type === 'scoop') {
+    const s = new THREE.Mesh(GEO.scoop, scoopMats[opt.hex]); outline(s, .03); s.position.y = 1.45; g.add(s);
+    const w = new THREE.Mesh(GEO.cone2, MAT.waffle); outline(w, .025); w.rotation.x = Math.PI; w.position.y = .82; g.add(w);
+    o.hex = opt.hex; o.spin = s; o.need = opt.need;
+    if (opt.need) { const r = new THREE.Mesh(GEO.ring, MAT.ring); r.position.y = 1.45; g.add(r); o.ring = r; }
+  }
+  if (type === 'cherry') { const c = new THREE.Mesh(GEO.cherry, MAT.cherry); outline(c, .02); c.position.y = 1.2; const s = new THREE.Mesh(GEO.stem, MAT.stem); s.position.set(.05, .28, 0); s.rotation.z = -.3; c.add(s); g.add(c); o.spin = c; }
+  g.position.set(o.x, o.y, 0); objGroup.add(g); objs.push(o); return o;
+}
+function killObj(o) { objGroup.remove(o.g); o.g.traverse(m => { if (m.isMesh && m.material && m.material.map && bannerTex.indexOf(m.material.map) < 0 && m.material !== MAT.plank) {} }); o.dead = true; }
+
+/* 스프레이 자국 (바닥) */
+const TRAIL_N = 220;
+const trail = new THREE.InstancedMesh(new THREE.PlaneGeometry(.62, .62), new THREE.MeshBasicMaterial({ map:sprayDotTexture(), transparent:true, depthWrite:false, opacity:.92 }), TRAIL_N);
+trail.instanceMatrix.setUsage(THREE.DynamicDrawUsage); trail.frustumCulled = false; scene.add(trail);
+const trailD = new Float32Array(TRAIL_N), trailX = new Float32Array(TRAIL_N), trailS = new Float32Array(TRAIL_N), trailR = new Float32Array(TRAIL_N); let trailI = 0;
+for (let i = 0; i < TRAIL_N; i++) { trailS[i] = 0; trail.setColorAt(i, new THREE.Color('#fff')); }
+/* 파티클 */
+const PN = 260;
+const parts = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.09, 0), new THREE.MeshBasicMaterial(), PN);
+parts.instanceMatrix.setUsage(THREE.DynamicDrawUsage); parts.frustumCulled = false; scene.add(parts);
+const P = Array.from({ length:PN }, () => ({ life:0, x:0, y:0, z:0, vx:0, vy:0, vz:0, s:1, g:-14 })); let pI = 0;
+for (let i = 0; i < PN; i++) parts.setColorAt(i, new THREE.Color('#fff'));
+const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _c = new THREE.Color(), _e = new THREE.Euler();
+function burst(x, y, z, n, cols, sp, up, g) {
+  for (let i = 0; i < n; i++) { const p = P[pI = (pI + 1) % PN]; p.life = .55 + Math.random() * .5; p.max = p.life; p.x = x; p.y = y; p.z = z;
+    const a = Math.random() * Math.PI * 2, s = sp * (.4 + Math.random() * .8); p.vx = Math.cos(a) * s; p.vz = Math.sin(a) * s * .7; p.vy = (up || 4) * (.5 + Math.random()); p.s = .6 + Math.random() * 1.1; p.g = g === undefined ? -14 : g;
+    parts.setColorAt(pI, _c.set(cols[i % cols.length])); }
+  parts.instanceColor.needsUpdate = true;
+}
+
+/* ═════════════ 사운드 (합성) ═════════════ */
+const A = { ctx:null, master:null, music:null, on:!store.mute, t:0, step:0, timer:0 };
+function audio() {
+  if (A.ctx) return A.ctx; try { A.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+  A.master = A.ctx.createGain(); A.master.gain.value = A.on ? .55 : 0; A.master.connect(A.ctx.destination);
+  A.music = A.ctx.createGain(); A.music.gain.value = .32; A.music.connect(A.master); return A.ctx;
+}
+function tone(f, d, type, vol, slide, when, dest) { const c = A.ctx; if (!c) return; const t = when || c.currentTime; const o = c.createOscillator(), g = c.createGain(); o.type = type || 'square'; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + d); g.gain.setValueAtTime(vol || .2, t); g.gain.exponentialRampToValueAtTime(.001, t + d); o.connect(g); g.connect(dest || A.master); o.start(t); o.stop(t + d + .02); }
+function noiseHit(d, vol, hp, when, dest) { const c = A.ctx; if (!c) return; const t = when || c.currentTime; const b = c.createBuffer(1, c.sampleRate * d, c.sampleRate), ch = b.getChannelData(0); for (let i = 0; i < ch.length; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / ch.length); const s = c.createBufferSource(); s.buffer = b; const f = c.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = hp || 1000; const g = c.createGain(); g.gain.value = vol; s.connect(f); f.connect(g); g.connect(dest || A.master); s.start(t); }
+const SFX = {
+  jump:() => tone(330, .16, 'square', .14, 660), trick:() => { tone(520, .1, 'square', .12, 1040); setTimeout(() => tone(780, .14, 'triangle', .14, 1560), 70); },
+  land:() => noiseHit(.08, .18, 400), chip:k => tone(880 * Math.pow(2, Math.min(k, 12) / 24), .08, 'triangle', .12),
+  scoop:() => { [523, 659, 784].forEach((f, i) => setTimeout(() => tone(f, .18, 'triangle', .16), i * 60)); },
+  wrong:() => tone(220, .22, 'sawtooth', .1, 140), hit:() => { noiseHit(.25, .4, 200); tone(140, .3, 'sawtooth', .22, 60); },
+  close:() => noiseHit(.18, .16, 2600), cherry:() => { tone(660, .12, 'triangle', .16, 990); setTimeout(() => tone(990, .2, 'triangle', .14), 90); },
+  split:() => { [523, 659, 784, 1046, 1318].forEach((f, i) => setTimeout(() => tone(f, .22, 'square', .14), i * 70)); noiseHit(.5, .2, 3000); },
+  smash:() => { noiseHit(.12, .3, 600); tone(200, .12, 'square', .12, 90); }, go:() => tone(784, .3, 'square', .16), tick:() => tone(392, .12, 'square', .12),
+  puddle:() => tone(300, .3, 'sine', .14, 120), sticker:() => tone(1046, .12, 'triangle', .14, 1568)
+};
+const BASS = [36, 36, 43, 36, 41, 41, 39, 43], ARP = [60, 63, 67, 70, 72, 70, 67, 63];
+function mtof(n) { return 440 * Math.pow(2, (n - 69) / 12); }
+function musicStart() { if (!audio() || A.timer) return; A.t = A.ctx.currentTime + .05; A.step = 0; A.timer = setInterval(sched, 25); }
+function musicStop() { clearInterval(A.timer); A.timer = 0; }
+function sched() {
+  const c = A.ctx, spb = 60 / 124 / 2;
+  while (A.t < c.currentTime + .12) { const s = A.step % 16, t = A.t;
+    if (s % 4 === 0) tone(110, .14, 'sine', .5, 40, t, A.music);
+    if (s === 4 || s === 12) noiseHit(.12, .22, 1500, t, A.music);
+    if (s % 2 === 1) noiseHit(.03, .08, 7000, t, A.music);
+    if (s % 2 === 0) tone(mtof(BASS[(A.step >> 1) % 8]), .2, 'triangle', .22, 0, t, A.music);
+    if (G && G.split > 0) tone(mtof(ARP[A.step % 8] + 12), .1, 'square', .07, 0, t, A.music);
+    else if (G && G.zone >= 1 && s % 4 === 2) tone(mtof(ARP[(A.step >> 2) % 8]), .14, 'triangle', .07, 0, t, A.music);
+    A.t += spb; A.step++; }
+}
+function setMute(m) { A.on = !m; store.mute = m; store.save(); if (A.master) A.master.gain.value = A.on ? .55 : 0; document.getElementById('bMute').classList.toggle('off', m); }
+
+/* ═════════════ 상태 ═════════════ */
+let G = null, mode = 'loading', paused = false;
+function newOrder(first) {
+  if (first) return [build.b, build.m, build.h];
+  const pool = FLAVORS.map(f => f.hex); const o = []; for (let i = 0; i < 3; i++) o.push(pool[Math.floor(Math.random() * pool.length)]); return o;
+}
+function newRun() {
+  objs.forEach(killObj); objs.length = 0;
+  for (let i = 0; i < TRAIL_N; i++) trailS[i] = 0;
+  G = { dist:0, speed:15, lane:1, x:0, y:0, vy:0, air:false, jumps:0, slide:0, lives:3, inv:0, pts:0, combo:0, comboT:0, maxCombo:0, chips:0, splits:0, tricks:0, order:newOrder(true), filled:0, orderN:1,
+    split:0, spawnD:30, gateD:70, zone:0, shake:0, stop:0, laneT:9, dying:0, slip:0, fov:0, flipT:0, spin:0, lastHit:'', t:0, blink:2 };
+  updateOrderHUD(); updateLives(); setZoneVisual(0, true);
+  document.body.classList.remove('splitting', 'lastlife');
+}
+
+/* ═════════════ 스폰 ═════════════ */
+function freeLane(ex) { const ls = [0, 1, 2].filter(l => ex.indexOf(l) < 0); return ls[Math.floor(Math.random() * ls.length)]; }
+function chipLine(d, lane, n, arc) { for (let i = 0; i < n; i++) makeObj('chip', { d:d + i * 2.1, lane, y:arc ? .5 + Math.sin(i / (n - 1) * Math.PI) * 1.7 : .55 }); }
+function spawnRow(d) {
+  const diff = Math.min(1, G.dist / 1800), r = Math.random();
+  if (d >= G.gateD && G.filled >= 3) G.gateD = d + 40; /* 스플릿 중엔 채울 스쿱이 없으니 게이트를 미룬다 */
+  if (d >= G.gateD) { /* 스쿱 게이트 */
+    const need = G.order[G.filled], others = FLAVORS.map(f => f.hex).filter(h => h !== need).sort(() => Math.random() - .5);
+    const lanes = [0, 1, 2].sort(() => Math.random() - .5);
+    makeObj('scoop', { d, lane:lanes[0], hex:need, need:true }); makeObj('scoop', { d, lane:lanes[1], hex:others[0] }); makeObj('scoop', { d, lane:lanes[2], hex:others[1] });
+    G.gateD = d + 115 + Math.random() * 40; return 22;
+  }
+  if (G.lives < 3 && Math.random() < .05) { makeObj('cherry', { d, lane:Math.floor(Math.random() * 3) }); return 10; }
+  if (r < .2) { chipLine(d, Math.floor(Math.random() * 3), 6); return 14; }
+  if (r < .42) { const l = Math.floor(Math.random() * 3); makeObj(Math.random() < .55 ? 'cone' : 'barrier', { d, lane:l }); chipLine(d - 5, l, 5, true); if (Math.random() < diff) makeObj('cone', { d:d + 1, lane:freeLane([l, 1]) }); return 15 - diff * 3; }
+  if (r < .6) { const l = Math.floor(Math.random() * 3); makeObj('banner', { d, lane:l, v:Math.floor(Math.random() * 3) }); const o = freeLane([l]); chipLine(d - 3, o, 4); if (Math.random() < diff * .8) makeObj('cone', { d, lane:freeLane([l, o]) }); return 15 - diff * 3; }
+  if (r < .74) { const f = Math.floor(Math.random() * 3); [0, 1, 2].forEach(l => { if (l !== f) makeObj(Math.random() < .5 ? 'cone' : 'barrier', { d, lane:l }); }); chipLine(d - 3, f, 4); return 16 - diff * 3; }
+  if (r < .84) { makeObj('puddle', { d, lane:Math.floor(Math.random() * 3) }); chipLine(d + 4, Math.floor(Math.random() * 3), 4); return 13; }
+  if (r < .92 && diff > .25) { [0, 1, 2].forEach(l => makeObj('barrier', { d, lane:l })); chipLine(d - 3, 1, 5, true); return 17; }
+  { const l = Math.floor(Math.random() * 3); chipLine(d, l, 5, true); makeObj('cone', { d:d + 4.2, lane:l }); return 14; }
+}
+function spawnAhead() { while (G.spawnD < G.dist + 150) G.spawnD += spawnRow(G.spawnD); }
+
+/* ═════════════ HUD ═════════════ */
+const $ = id => document.getElementById(id);
+const hud = { score:$('hScore'), mult:$('hMult'), dist:$('hDist'), zone:$('hZone'), combo:$('hCombo'), bar:$('hComboBar'), split:$('splitBar') };
+function score() { return Math.floor(G.dist) + Math.floor(G.pts); }
+function mult() { return Math.min(4, 1 + Math.floor(G.combo / 10) * .5) * (G.split > 0 ? 2 : 1); }
+function addPts(p, label, cls, big) { const m = mult(); G.pts += p * m; if (label) popup(label + (p ? ' +' + Math.round(p * m) : ''), cls, big); }
+function addCombo(n) { G.combo += n; G.comboT = 3.2; G.maxCombo = Math.max(G.maxCombo, G.combo); if (G.combo % 10 === 0 && G.combo > 0) popup('×' + mult() + ' COMBO', 'pink', true); }
+function breakCombo() { G.combo = 0; G.comboT = 0; }
+function updateOrderHUD() {
+  const sc = [...document.querySelectorAll('#boat .scoop')];
+  sc.forEach((s, i) => { const h = G.order[i]; s.classList.toggle('on', i < G.filled); s.classList.toggle('next', i === G.filled); s.style.background = i < G.filled ? h : 'transparent'; s.querySelector('i').style.background = h; });
+  const need = G.order[G.filled]; const n = $('need'); n.querySelector('i').style.background = need || 'transparent'; n.querySelector('span').textContent = need ? '다음 스쿱 · ' + FL[need].ko : 'SPLIT!';
+  $('oTitle').textContent = G.orderN === 1 ? 'YOUR SPLIT' : 'ORDER IN'; $('oCount').textContent = 'ORDER ' + String(G.orderN).padStart(2, '0');
+}
+function updateLives() { const is = [...document.querySelectorAll('#lives i')], cols = [build.b, build.m, build.h]; is.forEach((e, i) => { e.style.background = cols[i]; e.classList.toggle('gone', i >= G.lives); }); document.body.classList.toggle('lastlife', G.lives === 1 && mode === 'play'); }
+const _v = new THREE.Vector3();
+function popup(txt, cls, big) {
+  if (!D) return; _v.set(player.position.x, player.position.y + 2.6, player.position.z).project(camera);
+  const e = document.createElement('div'); e.className = 'pop ' + (cls || '') + (big ? ' big' : ''); e.textContent = txt;
+  e.style.left = ((_v.x * .5 + .5) * innerWidth + (Math.random() - .5) * 60) + 'px'; e.style.top = ((-_v.y * .5 + .5) * innerHeight) + 'px';
+  $('pops').appendChild(e); setTimeout(() => e.remove(), 1000);
+}
+function fxClass(id, c) { const e = $(id); e.classList.remove(c); void e.offsetWidth; e.classList.add(c); }
+
+/* ═════════════ 존 ═════════════ */
+const zc = { top:new THREE.Color(), hor:new THREE.Color(), fog:new THREE.Color(), light:new THREE.Color(), hemiG:new THREE.Color(), road:new THREE.Color() };
+let zoneMix = 0;
+function setZoneVisual(z, instant) { G.zoneTarget = z; if (instant) zoneMix = z; }
+function applyZone(dt) {
+  const tgt = G ? G.zone : 0; zoneMix += (tgt - zoneMix) * Math.min(1, dt * .8);
+  const i = Math.min(1, Math.floor(zoneMix)), f = zoneMix - i, a = ZONES[i], b = ZONES[Math.min(2, i + 1)];
+  ['top', 'hor', 'fog', 'light', 'hemiG', 'road'].forEach(k => zc[k].set(a[k]).lerp(_c.set(b[k]), f));
+  skyU.top.value.copy(zc.top); skyU.hor.value.copy(zc.hor); scene.fog.color.copy(zc.fog); key.color.copy(zc.light); hemi.groundColor.copy(zc.hemiG);
+  skyU.sunC.value.set(zoneMix > 1.5 ? '#E8F4FF' : '#FFE9A8');
+  roadMats.forEach(m => m.color.copy(zc.road)); walkMat.color.set('#D9A27A').multiply(zc.road); curbMat.color.copy(zc.road);
+  segs.forEach(s => { s.userData.wl.material.color.copy(zc.road); s.userData.wr.material.color.copy(zc.road); });
+  const lamp = a.lamp + (b.lamp - a.lamp) * f; lampHead.color.set('#FFE9A8').multiplyScalar(.5 + lamp * .9);
+}
+
+/* ═════════════ 입력 ═════════════ */
+const IN = { };
+function act(a) {
+  if (mode !== 'play' || paused || !G || G.dying) return;
+  if (a === 'left' && G.lane > 0) { G.lane--; G.laneT = 0; SP.lean.v += 9; SP.tiltB.v -= 3; SP.tiltM.v -= 6; SP.tiltH.v -= 9; }
+  if (a === 'right' && G.lane < 2) { G.lane++; G.laneT = 0; SP.lean.v -= 9; SP.tiltB.v += 3; SP.tiltM.v += 6; SP.tiltH.v += 9; }
+  if (a === 'jump') {
+    if (!G.air) { G.vy = 11; G.air = true; G.jumps = 1; G.slide = 0; SFX.jump(); SP.sq.v += 6; SP.sqH.v += 9; burst(G.x, .2, 0, 8, [C.cream, C.sun], 3, 2); }
+    else if (G.jumps === 1) { G.vy = 9.5; G.jumps = 2; G.flipT = .55; G.tricks++; SFX.trick(); addCombo(2); addPts(150, 'KICKFLIP', 'blue'); }
+  }
+  if (a === 'down') { if (G.air) { G.vy = -24; } G.slide = .65; SP.sq.v -= 6; }
+}
+addEventListener('keydown', e => {
+  const k = e.code;
+  if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'].includes(k)) e.preventDefault();
+  if (e.repeat) return;
+  if (mode === 'play') {
+    if (k === 'ArrowLeft' || k === 'KeyA') act('left');
+    else if (k === 'ArrowRight' || k === 'KeyD') act('right');
+    else if (k === 'ArrowUp' || k === 'KeyW' || k === 'Space') act('jump');
+    else if (k === 'ArrowDown' || k === 'KeyS') act('down');
+    else if (k === 'KeyP' || k === 'Escape') setPause(!paused);
+    else if (k === 'KeyM') setMute(A.on);
+  } else if (mode === 'title' && (k === 'Enter') && $('how').hidden && $('book').hidden) startRun();
+  else if (mode === 'result' && (k === 'Enter' || k === 'Space') && $('book').hidden) startRun();
+});
+let tStart = null;
+cv.addEventListener('pointerdown', e => { if (mode !== 'play') return; tStart = { x:e.clientX, y:e.clientY, t:performance.now(), used:false }; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', e => { if (!tStart || tStart.used) return; const dx = e.clientX - tStart.x, dy = e.clientY - tStart.y; if (Math.max(Math.abs(dx), Math.abs(dy)) > 30) { tStart.used = true; act(Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'jump' : 'down')); } });
+cv.addEventListener('pointerup', () => { if (tStart && !tStart.used && performance.now() - tStart.t < 300) act('jump'); tStart = null; });
+
+/* ═════════════ 흐름 ═════════════ */
+function show(id, on) { $(id).hidden = !on; }
+function toTitle() {
+  mode = 'title'; paused = false; musicStop(); newRun(); G.speed = 6;
+  show('hud', false); show('result', false); show('pause', false); show('title', true); show('hint', false);
+  $('tBest').textContent = store.best; $('tSplits').textContent = store.splits; $('tStk').textContent = store.owned.filter(Boolean).length + '/12';
+  buildLab();
+}
+function startRun() {
+  document.body.classList.remove('lab-open');
+  audio(); if (A.ctx && A.ctx.state === 'suspended') A.ctx.resume();
+  newRun(); mode = 'count'; show('title', false); show('result', false); show('book', false); show('how', false); show('hud', true);
+  const cnt = $('count'); cnt.hidden = false; let n = 3;
+  const tick = () => { if (n > 0) { cnt.textContent = n; fxClass('count', 'go'); SFX.tick(); n--; setTimeout(tick, 600); } else { cnt.textContent = 'GO!'; fxClass('count', 'go'); SFX.go(); setTimeout(() => { cnt.hidden = true; }, 500); mode = 'play'; G.spawnD = G.dist + 32; G.gateD = G.dist + 75; musicStart(); zoneBanner(0);
+    if (store.runs < 2) { $('hint').classList.add('on'); setTimeout(() => $('hint').classList.remove('on'), 4200); } } };
+  tick(); cv.focus({ preventScroll:true });
+}
+function setPause(p) { if (mode !== 'play') return; paused = p; show('pause', p); if (p) musicStop(); else musicStart(); }
+function zoneBanner(z) { const e = $('zone'); e.querySelector('small').textContent = 'ZONE ' + (z + 1); e.querySelector('span').textContent = ZONES[z].name; fxClass('zone', 'go'); hud.zone.textContent = ZONES[z].name; }
+document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play' && !paused) setPause(true); });
+
+/* 피격 · 획득 */
+function hurt(o) {
+  if (G.inv > 0 || G.split > 0) return;
+  G.lives--; G.inv = 1.5; G.stop = .09; G.shake = .7; breakCombo(); SFX.hit(); fxClass('splat', 'go');
+  burst(G.x, 1.3, 0, 26, [C.ink, C.cherry, build.h], 7, 6);
+  SP.sq.v -= 10; SP.sqH.v -= 14; SP.tiltH.v += (Math.random() < .5 ? -1 : 1) * 14;
+  popup(['앗 녹는다!', 'OUCH!', '흐물…'][Math.floor(Math.random() * 3)], 'ink', true);
+  updateLives();
+  if (G.lives <= 0) { G.dying = 1.6; musicStop(); G.snap = snapshot(); }
+}
+function collect(o) {
+  if (o.type === 'chip') { G.chips++; addCombo(1); addPts(10); SFX.chip(G.combo); burst(o.x, o.g.position.y, o.g.position.z, 5, ['#F8D86A', C.cream], 2.5, 3); }
+  if (o.type === 'cherry') { if (G.lives < 3) { G.lives++; updateLives(); } SFX.cherry(); popup('CHERRY! 한 단 회복', 'pink', true); burst(o.x, 1.2, 0, 16, [C.cherry, '#9E1B32', C.cream], 4, 5); SP.sq.v += 8; }
+  if (o.type === 'scoop') {
+    const need = G.order[G.filled];
+    burst(o.x, 1.45, o.g.position.z, 24, [o.hex, C.cream, '#fff'], 5, 5);
+    if (o.hex === need) {
+      G.filled++; addCombo(3); addPts(300, 'SCOOP · ' + FL[o.hex].ko, 'mint', true); SFX.scoop(); SP.sq.v += 10; SP.sqH.v += 14;
+      objs.forEach(x => { if (x.type === 'scoop' && Math.abs(x.d - o.d) < 1 && x !== o) x.taken = true; });
+      if (G.filled >= 3) startSplit();
+      updateOrderHUD();
+    } else if (need) { breakCombo(); SFX.wrong(); popup('그건 ' + (FL[o.hex] ? FL[o.hex].ko : '다른 ') + '맛!', 'cream'); }
+  }
+}
+function startSplit() {
+  G.split = 7; G.splits++; G.fov = 1; SFX.split(); fxClass('slam', 'go'); fxClass('flash', 'go'); addPts(1000, null);
+  document.body.classList.add('splitting'); G.flipT = .8; SP.sq.v += 14;
+  burst(G.x, 1, 0, 60, [C.banana, C.cherry, C.skate, C.mint, C.cream], 8, 8);
+  G.lastSplit = G.order.slice();
+}
+function endSplit() { document.body.classList.remove('splitting'); G.orderN++; G.order = newOrder(false); G.filled = 0; updateOrderHUD(); popup('NEW ORDER IN', 'cream', true); }
+
+/* ═════════════ 결과 · 스티커 ═════════════ */
+function drawSticker(id, size) {
+  if (ART.sticker[id]) return ART.sticker[id].src;
+  const c = cnv(size, size), x = c.getContext('2d'), s = size / 100; x.scale(s, s); x.lineJoin = 'round'; x.lineCap = 'round';
+  x.fillStyle = '#fff'; x.beginPath(); x.arc(50, 50, 47, 0, 7); x.fill(); x.lineWidth = 3; x.strokeStyle = C.ink; x.stroke();
+  const bg = [C.banana, C.cherry, C.sun, C.skate, C.cream, C.mint, C.ink, C.cherry, C.banana, C.skate, '#F2C94C', C.ink][id];
+  x.fillStyle = bg; x.beginPath(); x.arc(50, 50, 40, 0, 7); x.fill();
+  x.strokeStyle = C.ink; x.lineWidth = 3.4;
+  const scoopAt = (cx, cy, r, col) => { x.fillStyle = col; x.beginPath(); x.arc(cx, cy, r, Math.PI, 0); x.quadraticCurveTo(cx + r, cy + r * .5, cx + r * .5, cy + r * .4); x.lineTo(cx - r * .5, cy + r * .4); x.quadraticCurveTo(cx - r, cy + r * .5, cx - r, cy); x.fill(); x.stroke(); };
+  const banana = (cx, cy, w, col) => { x.fillStyle = col; x.beginPath(); x.moveTo(cx - w, cy - 6); x.quadraticCurveTo(cx, cy + 22, cx + w, cy - 6); x.quadraticCurveTo(cx, cy + 8, cx - w, cy - 6); x.fill(); x.stroke(); };
+  if (id === 0) { banana(50, 48, 30, '#FFE17A'); x.fillStyle = C.cherry; [32, 68].forEach(px => { x.beginPath(); x.arc(px, 66, 6, 0, 7); x.fill(); x.stroke(); }); }
+  if (id === 1) { scoopAt(50, 46, 20, '#F2D9BC'); x.fillStyle = '#F2D9BC'; x.beginPath(); x.roundRect(40, 52, 7, 18, 3.5); x.fill(); x.stroke(); }
+  if (id === 2) { x.save(); x.translate(50, 50); x.scale(1.7, 1.7); x.beginPath(); x.moveTo(0, -11); x.bezierCurveTo(-12, -2, -11, 9, -5, 9); x.bezierCurveTo(-2, 9, 0, 6, 0, 5); x.bezierCurveTo(0, 6, 2, 9, 5, 9); x.bezierCurveTo(11, 9, 12, -2, 0, -11); x.fillStyle = '#9E1B32'; x.fill(); x.lineWidth = 2; x.stroke(); x.restore(); }
+  if (id === 3) { star(x, 50, 52, 30, 13, 5); x.fillStyle = C.cherry; x.fill(); x.stroke(); }
+  if (id === 4) { for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) { x.fillStyle = (i + j) % 2 ? C.ink : '#fff'; x.fillRect(30 + i * 10, 34 + j * 10, 10, 10); } x.strokeRect(30, 34, 40, 30); x.beginPath(); x.moveTo(30, 34); x.lineTo(30, 76); x.stroke(); }
+  if (id === 5) { x.fillStyle = C.cream; x.fillRect(22, 38, 56, 24); x.strokeRect(22, 38, 56, 24); x.fillStyle = C.ink; x.font = '400 10px Bungee'; x.textAlign = 'center'; x.fillText('WET PAINT', 50, 54); }
+  if (id === 6) { x.fillStyle = C.cherry; x.beginPath(); x.roundRect(38, 34, 24, 40, 5); x.fill(); x.stroke(); x.fillStyle = C.cream; x.fillRect(42, 26, 16, 9); x.strokeRect(42, 26, 16, 9); x.fillStyle = C.banana; x.beginPath(); x.arc(70, 26, 6, 0, 7); x.fill(); }
+  if (id === 7) { x.fillStyle = '#F2D9BC'; x.beginPath(); x.arc(50, 52, 26, 0, 7); x.fill(); x.stroke(); x.lineWidth = 4; x.beginPath(); x.moveTo(36, 50); x.quadraticCurveTo(41, 45, 46, 45); x.stroke(); x.beginPath(); x.moveTo(54, 45); x.quadraticCurveTo(59, 45, 64, 50); x.stroke(); }
+  if (id === 8) { banana(50, 62, 32, '#FFE17A'); scoopAt(38, 50, 9, '#ED5579'); scoopAt(50, 46, 9, '#754C3A'); scoopAt(62, 50, 9, '#F2D9BC'); x.fillStyle = '#9E1B32'; x.beginPath(); x.arc(50, 34, 5, 0, 7); x.fill(); x.stroke(); }
+  if (id === 9) { [['#ED5579', 30, 66], ['#754C3A', 24, 52], ['#F2D9BC', 18, 38]].forEach(([col, w, y]) => { x.fillStyle = col; x.beginPath(); x.roundRect(50 - w, y - 6, w * 2, 14, 7); x.fill(); x.stroke(); }); }
+  if (id === 10) { banana(50, 48, 30, '#FFD34A'); x.fillStyle = '#fff'; star(x, 70, 30, 7, 3, 4); x.fill(); }
+  if (id === 11) { crown(x, 50, 52, 26); x.fillStyle = C.banana; x.fill(); x.stroke(); x.fillStyle = C.cherry; [[50, 34]].forEach(([px, py]) => { x.beginPath(); x.arc(px, py, 5, 0, 7); x.fill(); x.stroke(); }); }
+  return c.toDataURL();
+}
+function rollSticker() {
+  let tier; store.pity = (store.pity || 0) + 1;
+  if (store.pity >= 7) tier = 2; else { const r = Math.random() * 100; tier = r < RAR[2].w ? 2 : r < RAR[2].w + RAR[1].w ? 1 : 0; }
+  if (tier === 2) store.pity = 0;
+  let pool = STICKERS.filter(s => s.rar === tier); const fresh = pool.filter(s => !store.owned[s.id]);
+  if (fresh.length && Math.random() < .7) pool = fresh;
+  return pool[Math.floor(Math.random() * pool.length)].id;
+}
+function finishRun() {
+  mode = 'result'; const sc = score(); const newBest = sc > store.best;
+  store.best = Math.max(store.best, sc); store.runs++; store.splits += G.splits;
+  let n = Math.min(3, G.splits) + (sc >= 3000 ? 1 : 0); if (store.runs === 1 && n === 0) n = 1;
+  const got = []; const before = store.owned.filter(Boolean).length;
+  for (let i = 0; i < n; i++) { const id = rollSticker(); store.owned[id]++; got.push({ id, count:store.owned[id] }); }
+  store.save();
+  $('rScore').textContent = sc.toLocaleString(); $('rBest').hidden = !newBest; $('rDist').textContent = Math.floor(G.dist); $('rSplits').textContent = G.splits; $('rCombo').textContent = G.maxCombo; $('rChips').textContent = G.chips;
+  $('rImg').src = G.snap || snapshot();
+  const ord = G.lastSplit || G.order;
+  $('rMadeT').textContent = G.splits ? '바나나 스플릿 ' + G.splits + '개 완성' : '스플릿까지 ' + (3 - G.filled) + '스쿱 남았어';
+  $('rMadeP').textContent = (G.splits ? '마지막 스플릿: ' : '이번 주문: ') + ord.map(h => FL[h].ko).join(' · ') + ' · ' + NOSES[build.nose].ko + ' 코 · ' + BOARDS[build.board].ko + ' 보드';
+  const row = $('rStk'); row.innerHTML = got.length ? '' : '<span class="none">스플릿 하나를 완성하면 스티커 한 장. 3,000점을 넘기면 한 장 더.</span>';
+  got.forEach((g, i) => { const s = STICKERS[g.id], el = document.createElement('div'); el.className = 'stk r' + s.rar;
+    el.innerHTML = '<div class="in"><div class="b">?</div><div class="f"><img alt="" src="' + drawSticker(g.id, 132) + '"><b>' + s.en + '</b>' + (g.count === 1 ? '<u>NEW!</u>' : '<u class="dup">×' + g.count + (g.count >= 3 ? ' HOLO' : '') + '</u>') + '</div></div>';
+    row.appendChild(el); setTimeout(() => { el.classList.add('flip'); SFX.sticker(); }, 600 + i * 520); });
+  const after = store.owned.filter(Boolean).length; MEDALS.forEach(m => { if (before < m.n && after >= m.n) setTimeout(() => popupCenter('MEDAL · ' + m.name), 900 + got.length * 520); });
+  if (SHOP_URL) { $('bridge').hidden = false; $('bShop').href = SHOP_URL; } else $('bridge').hidden = true;
+  show('hud', false); show('result', true); document.body.classList.remove('splitting', 'lastlife');
+  setTimeout(() => $('bAgain').focus({ preventScroll:true }), 50);
+}
+function popupCenter(t) { const e = document.createElement('div'); e.className = 'pop pink big'; e.textContent = t; e.style.left = '50%'; e.style.top = '30%'; e.style.zIndex = 30; document.body.appendChild(e); setTimeout(() => e.remove(), 1000); }
+function snapshot() {
+  /* 결과용 캐릭터 컷: 정면에서 한 장 */
+  const w = 256, rt = new THREE.WebGLRenderTarget(w, w, { colorSpace:THREE.SRGBColorSpace }); const cam = new THREE.PerspectiveCamera(30, 1, .1, 50);
+  const wp = new THREE.Vector3(); player.getWorldPosition(wp); const fa = rigWrap.rotation.y; cam.position.set(wp.x + Math.sin(fa) * 4.1, wp.y + 2.0, wp.z + Math.cos(fa) * 4.1); cam.lookAt(wp.x, wp.y + 1.15, wp.z);
+  const bg = scene.background; scene.background = new THREE.Color(C.asphalt); const vis = sky.visible; sky.visible = false; const fog = scene.fog; scene.fog = null;
+  renderer.setRenderTarget(rt); renderer.render(scene, cam); renderer.setRenderTarget(null);
+  scene.background = bg; sky.visible = vis; scene.fog = fog;
+  const px = new Uint8Array(w * w * 4); renderer.readRenderTargetPixels(rt, 0, 0, w, w, px); rt.dispose();
+  const c = cnv(w, w), x = c.getContext('2d'), im = x.createImageData(w, w);
+  for (let y = 0; y < w; y++) im.data.set(px.subarray((w - 1 - y) * w * 4, (w - y) * w * 4), y * w * 4);
+  x.putImageData(im, 0, 0); return c.toDataURL();
+}
+function renderBook() {
+  const grid = $('bookGrid'); grid.innerHTML = '';
+  STICKERS.forEach(s => { const n = store.owned[s.id], e = document.createElement('div'); e.className = 'slot' + (n ? ' got' : '') + (n >= 3 ? ' holo' : '');
+    e.innerHTML = n ? '<img alt="" src="' + drawSticker(s.id, 120) + '"><b>' + s.en + '</b><i>' + RAR[s.rar].en + ' · ×' + n + '</i>' : '<span class="q">?</span><i>' + RAR[s.rar].en + '</i>'; grid.appendChild(e); });
+  const got = store.owned.filter(Boolean).length; $('bookSub').textContent = got + ' / 12 · 스플릿을 완성할 때마다 스티커 한 장. 같은 스티커 세 장이면 홀로.';
+  $('medals').innerHTML = MEDALS.map(m => '<span class="' + (got >= m.n ? 'on' : '') + '">' + m.n + ' · ' + m.name + '</span>').join('');
+}
+
+/* ═════════════ 타이틀 꾸미기 ═════════════ */
+let labTier = 1; const TK = ['h', 'm', 'b'], TKO = ['머리', '가운데', '아래'];
+function buildLab() {
+  $('tiers').innerHTML = TK.map((k, i) => '<button type="button" data-t="' + i + '" class="' + (i === labTier ? 'on' : '') + '" aria-pressed="' + (i === labTier) + '"><i style="background:' + build[k] + '"></i>0' + (3 - i) + ' ' + TKO[i] + '</button>').join('');
+  $('flavors').innerHTML = FLAVORS.map(f => '<button type="button" data-f="' + f.hex + '" class="' + (build[TK[labTier]] === f.hex ? 'on' : '') + '" aria-label="' + f.ko + '"><i style="background:' + f.hex + '"></i><span>' + f.ko + '</span></button>').join('');
+  $('boards').innerHTML = Object.entries(BOARDS).map(([k, v]) => '<button type="button" data-bb="' + k + '" class="' + (build.board === k ? 'on' : '') + '" aria-pressed="' + (build.board === k) + '"><span class="sw" style="background:' + v.hex + '"></span>' + v.ko + '</button>').join('');
+  $('labBoard').textContent = BOARDS[build.board].ko;
+  $('noses').innerHTML = Object.entries(NOSES).map(([k, v]) => '<button type="button" data-n="' + k + '" class="' + (build.nose === k ? 'on' : '') + '" aria-pressed="' + (build.nose === k) + '"><span class="sw" style="background:' + v.hex + '"></span>' + v.ko + '</button>').join('');
+  $('labNose').textContent = NOSES[build.nose].ko + ' 하트 코';
+  $('labLayer').textContent = '0' + (3 - labTier) + ' · ' + TKO[labTier]; $('labFlavor').textContent = FL[build[TK[labTier]]].ko;
+}
+$('title').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.t !== undefined) { labTier = +b.dataset.t; buildLab(); SP.sq.v += 4; }
+  else if (b.dataset.f) { build[TK[labTier]] = b.dataset.f; applyBuild(); buildLab(); SP.sq.v += 6; SP.sqH.v += 8; SFX.chip && audio() && SFX.chip(4); }
+  else if (b.dataset.n) { build.nose = b.dataset.n; applyBuild(); buildLab(); SP.sqH.v += 8; }
+  else if (b.dataset.bb) { build.board = b.dataset.bb; applyBuild(); buildLab(); SP.sq.v += 5; SFX.chip && audio() && SFX.chip(2); }
+});
+$('bPlay').onclick = startRun; $('bAgain').onclick = startRun;
+$('bHow').onclick = () => show('how', true);
+$('bLab').onclick = () => document.body.classList.add('lab-open'); $('bLabDone').onclick = () => document.body.classList.remove('lab-open');
+$('bBook').onclick = $('bBook2').onclick = () => { renderBook(); show('book', true); };
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => { show('how', false); show('book', false); });
+$('bEdit').onclick = toTitle; $('bQuit').onclick = () => { show('pause', false); toTitle(); };
+$('bResume').onclick = () => setPause(false); $('bPause').onclick = () => setPause(true); $('bMute').onclick = () => { audio(); setMute(A.on); };
+
+/* ═════════════ 루프 ═════════════ */
+const clock = new THREE.Clock();
+function resize() {
+  const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h;
+  camera.fov = w / h < .8 ? 68 : w / h < 1.2 ? 60 : 52; camera.updateProjectionMatrix(); SH.uPx.value = renderer.getPixelRatio();
+}
+addEventListener('resize', resize);
+const camPos = new THREE.Vector3(3, 3.4, 7), camLook = new THREE.Vector3(0, 1.2, -6);
+function step(dt) {
+  G.t += dt;
+  const playing = mode === 'play' && !paused;
+  if (mode === 'title' || mode === 'count') { G.dist += G.speed * dt; }
+  if (playing && G.stop > 0) { G.stop -= dt; return; }
+  if (playing) {
+    if (G.dying > 0) { G.dying -= dt; G.speed = Math.max(0, G.speed - 30 * dt); if (G.dying <= 0) { finishRun(); return; } }
+    else {
+      const base = 15 + Math.min(13, G.dist * .008); G.speed += ((base * (G.split > 0 ? 1.28 : 1) * (G.slip > 0 ? .7 : 1)) - G.speed) * Math.min(1, dt * 2);
+    }
+    G.dist += G.speed * dt;
+    const z = ZONES.reduce((a, zz, i) => G.dist >= zz.at ? i : a, 0); if (z !== G.zone) { G.zone = z; zoneBanner(z); popup('ZONE ' + (z + 1), 'ink', true); }
+    spawnAhead();
+    if (G.comboT > 0) { G.comboT -= dt; if (G.comboT <= 0) G.combo = 0; }
+    if (G.inv > 0) G.inv -= dt; if (G.slip > 0) G.slip -= dt; G.laneT += dt;
+    if (G.split > 0) { G.split -= dt; hud.split.style.width = (G.split / 7 * 100) + '%'; if (G.split <= 0) endSplit(); }
+  }
+  /* 플레이어 물리 */
+  const tx = LANES[G.lane]; const prevX = G.x; G.x += (tx - G.x) * Math.min(1, dt * 13);
+  if (G.air) { G.vy -= 32 * dt; G.y += G.vy * dt; if (G.y <= 0) { G.y = 0; G.air = false; G.jumps = 0; G.vy = 0; SP.sq.v -= 9; SP.sqH.v -= 12; SP.fwdH.v += 4; if (playing) { SFX.land(); burst(G.x, .1, .3, 10, [C.cream, C.sun], 3, 1.5); } } }
+  if (G.slide > 0) G.slide -= dt;
+  if (G.flipT > 0) G.flipT -= dt;
+  /* 오브젝트 */
+  for (const o of objs) {
+    if (o.dead) continue; const zz = -(o.d - G.dist); o.g.position.z = zz;
+    if (o.spin) { o.spin.rotation.y += dt * (o.type === 'chip' ? 4 : 1.6); if (o.type === 'scoop') o.spin.position.y = 1.45 + Math.sin(G.t * 3 + o.d) * .12; }
+    if (o.ring) { o.ring.rotation.x = Math.PI / 2; o.ring.rotation.z += dt * 3; o.ring.scale.setScalar(1 + Math.sin(G.t * 6) * .06); }
+    if (o.taken) { o.g.scale.multiplyScalar(Math.max(0, 1 - dt * 8)); if (o.g.scale.x < .05) killObj(o); continue; }
+    if (o.knock) { o.g.position.y += o.kv * dt; o.kv -= 20 * dt; o.g.rotation.x += dt * 9; o.g.position.x += o.kx * dt; if (o.g.position.y < -3) killObj(o); continue; }
+    if (zz > 12) { killObj(o); continue; }
+    if (!playing || G.dying > 0 || o.hit) continue;
+    const dz = Math.abs(zz), sameLane = Math.abs(o.x - G.x) < .95;
+    if (o.type === 'chip' || o.type === 'cherry' || o.type === 'scoop') {
+      const oy = o.type === 'chip' ? o.g.position.y + (o.y ? 0 : 0) : o.type === 'scoop' ? 1.45 : 1.2;
+      const reachY = o.type === 'chip' ? Math.abs((o.y || .55) - (G.y + .6)) < 1.25 : G.y < 2.6;
+      if (dz < .9 && sameLane && reachY) { o.hit = true; o.taken = true; collect(o); }
+      continue;
+    }
+    if (dz < .55 && sameLane) {
+      let blocked = false;
+      if (o.type === 'cone') blocked = G.y < o.h; if (o.type === 'barrier') blocked = G.y < o.h;
+      if (o.type === 'banner') blocked = G.slide <= 0;
+      if (o.type === 'puddle') { if (G.y < .2) { o.hit = true; G.slip = .8; breakCombo(); SFX.puddle(); popup('미끌!', 'pink'); SP.tiltH.v += 12; SP.tiltM.v -= 8; burst(G.x, .1, 0, 10, ['#F5B3C6', '#fff'], 3, 2); } continue; }
+      o.hit = true;
+      if (blocked) {
+        if (G.split > 0) { G.shake = .25; SFX.smash(); addCombo(2); addPts(80, 'SMASH', 'pink'); o.knock = true; o.kv = 9; o.kx = (Math.random() - .5) * 8; burst(o.x, .8, 0, 14, [C.ink, C.banana], 5, 5); }
+        else { hurt(o); if (o.type === 'cone') { o.knock = true; o.kv = 7; o.kx = (Math.random() - .5) * 6; } }
+      }
+    } else if (!o.passed && zz > .8 && (o.type === 'cone' || o.type === 'barrier') && Math.abs(o.x - G.x) < 2.6 && !sameLane && G.laneT < .45 && G.inv <= 0) {
+      o.passed = true; addCombo(2); addPts(50, 'CLOSE!', 'blue'); SFX.close();
+    }
+  }
+  for (let i = objs.length - 1; i >= 0; i--) if (objs[i].dead) objs.splice(i, 1);
+
+  /* 세그먼트 */
+  const segIdx = Math.floor(G.dist / SEG) - 1;
+  segs.forEach(s => { let k = s.userData.k; if (k === undefined || k < segIdx || k >= segIdx + NSEG) { k = segIdx + ((((s.userData.slot - segIdx) % NSEG) + NSEG) % NSEG); if (s.userData.k !== k) { s.userData.k = k; dressSeg(s); } }
+    s.position.z = -((k + .5) * SEG - G.dist); });
+
+  /* 스프레이 자국 */
+  if ((playing || mode === 'title' || mode === 'count') && !G.air && G.dying <= 0) {
+    G.trailAcc = (G.trailAcc || 0) + dt * (G.split > 0 ? 40 : 20);
+    while (G.trailAcc > 1) { G.trailAcc--; const i = trailI = (trailI + 1) % TRAIL_N; trailD[i] = G.dist - .9 + Math.random() * .3; trailX[i] = G.x + (Math.random() - .5) * .6; trailS[i] = (G.split > 0 ? 1.6 : 1) * (.6 + Math.random() * .7); trailR[i] = Math.random() * 6;
+      const cols = G.split > 0 ? [C.banana, C.cherry, C.skate, C.mint, C.cream] : [build.b, build.m, build.h]; trail.setColorAt(i, _c.set(cols[Math.floor(Math.random() * cols.length)])); }
+    trail.instanceColor.needsUpdate = true;
+  }
+  for (let i = 0; i < TRAIL_N; i++) { const z = -(trailD[i] - G.dist); if (trailS[i] <= 0 || z > 14) { _m.makeScale(0, 0, 0); trail.setMatrixAt(i, _m); continue; }
+    _q.setFromEuler(_e.set(-Math.PI / 2, 0, trailR[i])); _m.compose(_p.set(trailX[i], .025 + i * .00002, z), _q, _s.setScalar(trailS[i])); trail.setMatrixAt(i, _m); }
+  trail.instanceMatrix.needsUpdate = true;
+
+  /* 파티클 */
+  for (let i = 0; i < PN; i++) { const p = P[i]; if (p.life <= 0) { _m.makeScale(0, 0, 0); parts.setMatrixAt(i, _m); continue; }
+    p.life -= dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += (p.vz + G.speed * .9) * dt; if (p.y < .05) { p.y = .05; p.vy *= -.35; p.vx *= .7; }
+    const s = p.s * Math.max(0, p.life / p.max); _m.compose(_p.set(p.x, p.y, p.z), _q.setFromEuler(_e.set(p.life * 7, p.life * 5, 0)), _s.setScalar(s)); parts.setMatrixAt(i, _m); }
+  parts.instanceMatrix.needsUpdate = true;
+
+  /* 캐릭터 애니메이션 */
+  player.position.set(G.x, G.y, 0);
+  const vx = (G.x - prevX) / Math.max(dt, 1e-4);
+  const leanT = -vx * .035 + (G.slip > 0 ? Math.sin(G.t * 30) * .15 : 0);
+  lean.rotation.z = SP.lean.step(leanT, dt);
+  const sq = SP.sq.step(0, dt), sqh = SP.sqH.step(0, dt);
+  const slideK = SP.duck.step(G.slide > 0 ? 1 : 0, dt);
+  if (D) {
+    const breathe = Math.sin(G.t * 3.2) * .025;
+    const melt = G.dying > 0 ? Math.min(1, (1.6 - G.dying) / 1.2) : 0;
+    D.rig.scale.set(1 + sq * .06 + melt * .5 + slideK * .18, Math.max(.15, 1 + breathe - sq * .1 - slideK * .38 - melt * .8), 1 + sq * .06 + melt * .5 + slideK * .18);
+    const tilt = -vx * .02;
+    D.pB.rotation.z = SP.tiltB.step(tilt * .4, dt) * .12;
+    D.pM.rotation.z = SP.tiltM.step(tilt * .8, dt) * .14; D.pM.rotation.x = SP.fwdM.step(-G.vy * .006 * (G.air ? 1 : 0), dt) * .2;
+    D.pH.rotation.z = SP.tiltH.step(tilt * 1.2, dt) * .16; D.pH.rotation.x = SP.fwdH.step(-G.vy * .01 * (G.air ? 1 : 0), dt) * .22;
+    D.pH.scale.set(1 + sqh * .05, 1 - sqh * .08, 1 + sqh * .05);
+    /* 눈 깜빡 */
+    G.blink -= dt; if (G.blink < 0) { G.blink = 2 + Math.random() * 3; G.blinkT = .12; } if (G.blinkT > 0) G.blinkT -= dt;
+    D.N.eyes.scale.set(D.eyeBase.x, D.eyeBase.y * (G.blinkT > 0 ? .15 : 1), D.eyeBase.z);
+    /* 스핀 · 킥플립 */
+    const spinTarget = G.flipT > 0 ? (1 - G.flipT / .55) * Math.PI * 2 : 0;
+    rigWrap.rotation.y = mode === 'title' ? Math.atan2(camera.position.x - G.x, camera.position.z) + Math.sin(G.t * .9) * .45 : FACE + spinTarget;
+    board.rotation.z = G.flipT > 0 && G.split <= 0 ? (1 - G.flipT / .55) * Math.PI * 2 : 0;
+    rigWrap.visible = !(G.inv > 0 && Math.floor(G.inv * 14) % 2 === 0 && G.lives > 0);
+    board.userData.wheels.forEach(w => { w.rotation[board.userData.spin] += dt * G.speed * 2; });
+    board.userData.peel.material.emissive.set(G.split > 0 ? C.banana : '#000'); board.userData.peel.material.emissiveIntensity = G.split > 0 ? .35 + Math.sin(G.t * 20) * .2 : 0;
+  }
+  blob.scale.setScalar(Math.max(.4, 1 - G.y * .18)); blob.position.y = .02 - G.y;
+
+  /* 카메라 */
+  const portrait = innerWidth / innerHeight < .8;
+  if (mode === 'title') {
+    const wide = innerWidth > 860;
+    camPos.lerp(_p.set(G.x + (wide ? 1.3 : .35), wide ? 1.8 : 2.15, wide ? 3.9 : 5.1), Math.min(1, dt * 3));
+    camLook.lerp(_v.set(G.x + (wide ? .55 : 0), wide ? 1.2 : (document.body.classList.contains('lab-open') ? .3 : 1.35), 0), Math.min(1, dt * 3));
+  } else {
+    camPos.lerp(_p.set(G.x * .55 + (portrait ? 1.2 : 2.0), (portrait ? 4.2 : 3.0) + G.y * .35, portrait ? 7.6 : 5.9), Math.min(1, dt * 5));
+    camLook.lerp(_v.set(G.x * .7, 1.1 + G.y * .3, -6), Math.min(1, dt * 6));
+  }
+  camera.position.copy(camPos);
+  if (G.shake > 0) { G.shake -= dt * 1.6; const s = Math.max(0, G.shake) ** 2 * .5; camera.position.x += (Math.random() - .5) * s; camera.position.y += (Math.random() - .5) * s; }
+  camera.lookAt(camLook);
+  const baseFov = innerWidth / innerHeight < .8 ? 68 : innerWidth / innerHeight < 1.2 ? 60 : 52;
+  G.fov = Math.max(0, G.fov - dt * .8); camera.fov = baseFov + (G.speed - 15) * .35 + (G.split > 0 ? 8 : 0) + G.fov * 6; camera.updateProjectionMatrix();
+  sky.position.copy(camera.position);
+
+  /* HUD */
+  if (mode === 'play') {
+    hud.score.textContent = score().toLocaleString(); hud.dist.textContent = Math.floor(G.dist) + 'M';
+    const m = mult(); hud.mult.hidden = m <= 1; hud.mult.textContent = '×' + m;
+    hud.combo.textContent = 'COMBO ' + G.combo; hud.bar.style.width = (G.comboT / 3.2 * 100) + '%';
+    $('speed').style.opacity = Math.min(.9, Math.max(0, (G.speed - 18) / 12) + (G.split > 0 ? .5 : 0));
+  } else $('speed').style.opacity = 0;
+  applyZone(dt);
+}
+const FACE = Math.PI / 2; /* 덩스는 옆으로 서서 탄다: 화면 오른쪽을 본다 */
+let loopErr = 0;
+function loop() {
+  requestAnimationFrame(loop);
+  const dt = Math.min(.05, clock.getDelta());
+  try {
+    if (G && !(mode === 'play' && paused)) step(dt);
+    renderer.render(scene, camera);
+  } catch (e) { if (loopErr++ < 3) console.error('[banana-split] frame error', e); }
+}
+
+/* ═════════════ 시작 ═════════════ */
+(async function boot() {
+  resize();
+  try { await Promise.race([document.fonts.load('400 80px Bungee'), new Promise(r => setTimeout(r, 2500))]); await Promise.race([document.fonts.load('400 80px "Black Han Sans"'), new Promise(r => setTimeout(r, 1500))]); await document.fonts.load('700 20px "Space Mono"'); } catch (e) {}
+  await loadArt();
+  wallTex = Array.from({ length:10 }, (_, i) => ART.wall[i] ? tex(ART.wall[i]) : wallTexture(i + 3));
+  /* 바닥·현수막은 폰트가 준비된 뒤 다시 그린다 (images/에 파일이 있으면 그 파일) */
+  roadTex = roadTex.map((t, i) => { t.dispose(); const n = ART.road[i] ? tex(ART.road[i]) : roadTexture(i); roadMats[i].map = n; roadMats[i].needsUpdate = true; return n; });
+  const BANNER_TXT = [['MELT CLUB', C.cherry], ['WET PAINT', C.skate], ['SPLIT ZONE', C.banana]];
+  bannerTex = bannerTex.map((t, i) => { t.dispose(); return ART.banner[i] ? tex(ART.banner[i]) : bannerTexture(...BANNER_TXT[i]); });
+  if (ART.logo) { const h = document.querySelector('.logo h1'); h.classList.add('has-img'); h.innerHTML = '<img class="logo-img" alt="BANANA SPLIT" src="' + ART.logo.src + '">'; }
+  for (let i = 0; i < NSEG; i++) { const s = makeSeg(i); s.userData.slot = i; segs.push(s); }
+  setMute(store.mute);
+  try {
+    try { await loadBoard(); } catch (e) { console.warn('바나나 보드 모델 대신 기본 보드 사용', e); board.clear(); makeBoard(); }
+    D = await loadDungs(p => { $('loadBar').style.width = Math.round(p * 100) + '%'; });
+    D.rig.position.y = board.userData.deck - .02; rigWrap.add(D.rig); rigWrap.rotation.y = FACE;
+    applyBuild();
+  } catch (e) { console.error(e); $('loadTxt').textContent = '덩스를 불러오지 못했어. 새로고침해 줘.'; return; }
+  $('loadBar').style.width = '100%';
+  toTitle(); requestAnimationFrame(loop);
+  setTimeout(() => { $('loading').hidden = true; }, 250);
+  window.BS = { G:() => G, D:() => D, store, act, startRun, finishRun:() => { if (G) { G.lives = 0; G.dying = .01; } }, split:() => { G.filled = 3; startSplit(); updateOrderHUD(); } };
+})();
+</script>
+</body>
+</html>
